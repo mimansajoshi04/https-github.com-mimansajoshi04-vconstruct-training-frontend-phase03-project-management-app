@@ -1,9 +1,16 @@
-import './App.css'
+// CSS Files
+import "./App.css";
+
+// Database context
+import DBContext from "../contexts/DBContext.tsx";
+
+// react imports
+import { useContext } from "react";
 
 function App() {
-  return (
-    <h3>PROJECT SETUP</h3>
-  )
+  const db = useContext(DBContext);
+  console.log("this is the database:", db);
+  return <h3>PROJECT SETUP</h3>;
 }
 
-export default App
+export default App;
