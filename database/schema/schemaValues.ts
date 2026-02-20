@@ -3,7 +3,8 @@ const schemaValues = {
         "admin":{
             "name": "Admin User",
             "email": "mimansaj@vconstruct.in",
-            "role": "admin"
+            "role": "admin",
+            "password": "admin123"
         },
         "roles":{
             "admin": "admin",

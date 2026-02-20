@@ -11,6 +11,7 @@ const dbSchema = {
         { name: "name", keyPath: "name", options: { unique: false } },
         { name: "email", keyPath: "email", options: { unique: true } },
         { name: "role", keyPath: "role", options: { unique: false } },
+        { name: "password", keyPath: "password", options: { unique: false } },
       ],
     },
     // projects

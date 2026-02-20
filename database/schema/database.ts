@@ -3,7 +3,7 @@ import schemaValues from "./schemaValues";
 
 import { createUser } from "../model/user";
 
-const createDB = async () => {
+const createDB = async (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(dbSchema.name, dbSchema.version);
 
@@ -32,7 +32,8 @@ const createDB = async () => {
         try {
           const response = await createUser(schemaValues.users.admin);
           if (!response) reject("Failed to create admin user.");
-          resolve(response);
+          const db = request.result;
+          resolve(db);
         } catch (error) {
           console.error("Error creating admin user:", error);
           indexedDB.deleteDatabase(dbSchema.name);
@@ -54,7 +55,7 @@ const createDB = async () => {
   });
 };
 
-const getDB = async () => {
+const getDB = async (): Promise<IDBDatabase> => {
   return new Promise(async (resolve, reject) => {
     try {
       const databases = await indexedDB.databases();
@@ -69,7 +70,17 @@ const getDB = async () => {
           reject("Error creating database.");
         }
       } else {
-        resolve(myDataBase);
+        const request = indexedDB.open(dbSchema.name, dbSchema.version);
+
+        request.onsuccess = (event: any) => {
+          const db = event?.target?.result ?? null;
+          if (!db) {
+            console.error("Failed to open database.");
+            reject("Failed to open database.");
+            return;
+          }
+          resolve(db);
+        };
       }
     } catch (error) {
       console.error("Error fetching databases:", error);
