@@ -7,7 +7,12 @@ interface UserType {
   password?: string;
 }
 
-const createUser = ({ name, email, role, password }: UserType) => {
+const createUser = ({
+  name,
+  email,
+  role,
+  password,
+}: UserType): Promise<UserType | null> => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(
       dbSchema?.name ?? "my-database",
@@ -52,13 +57,17 @@ const createUser = ({ name, email, role, password }: UserType) => {
           });
 
           addRequest.onsuccess = () => {
-            console.log("User added successfully:", {
-              name,
-              email,
-              role,
-              password,
+            // console.log("User added successfully:", {
+            //   name,
+            //   email,
+            //   role,
+            //   password,
+            // });
+            resolve({
+              name: name,
+              email: email,
+              role: role,
             });
-            resolve("User added successfully.");
           };
           addRequest.onerror = (event: any) => {
             console.error(
@@ -265,6 +274,47 @@ const updateUserById = (
   });
 };
 
+const loginUser = ({
+  email,
+  password,
+}: {
+  email: string;
+  password: string;
+}): Promise<UserType | null | string> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(dbSchema?.name ?? "my-database");
+
+    request.onsuccess = async (event: any) => {
+      const db = event?.target?.result ?? null;
+      if (!db) {
+        console.error("DB not found");
+        reject(null);
+        return;
+      }
+
+      try {
+        const user = await getUserByEmail(db, email);
+        if (!user) {
+          console.log("User not found");
+          reject("User not found!");
+          return;
+        }
+
+        if (user.password === password)
+          resolve({
+            name: user.name,
+            role: user.role,
+            email: user.email,
+          });
+
+        reject("Incorrect Password");
+      } catch (error) {
+        reject(error);
+      }
+    };
+  });
+};
+
 export {
   type UserType,
   createUser,
@@ -274,4 +324,5 @@ export {
   deleteUserById,
   deleteUserByEmail,
   updateUserById,
+  loginUser,
 };

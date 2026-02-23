@@ -81,6 +81,25 @@ const dbSchema = {
         { name: "user_id", keyPath: "user_id", options: { unique: false } },
       ],
     },
+    // assignments
+    {
+      name: "project_user_relation",
+      options: { keyPath: "id", autoIncrement: true },
+      indexes: [
+        { name: "id", keyPath: "id", options: { unique: true } },
+        { name: "user_id", keyPath: "user_id", options: { unique: false } },
+        {
+          name: "project_id",
+          keyPath: "project_id",
+          options: { unique: false },
+        },
+        {
+          name: "assigned_at",
+          keyPath: "assigned_at",
+          options: { unique: false },
+        },
+      ],
+    },
   ],
 };
 
