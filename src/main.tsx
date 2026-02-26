@@ -3,14 +3,14 @@ import { createRoot } from "react-dom/client";
 
 import { BrowserRouter } from "react-router-dom";
 // CSS Files
-import "./index.css";
+// import "./index.css";
 
 // Components
 import App from "./App.tsx";
 
 // Contexts
-import DBContextProvider from "./contextProviders/DBContextProvider.tsx";
-import UserContextProvider from "./contextProviders/UserContextProvider.tsx";
+import DBContextProvider from "./context/contextProviders/DBContextProvider.tsx";
+import UserContextProvider from "./context/contextProviders/UserContextProvider.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

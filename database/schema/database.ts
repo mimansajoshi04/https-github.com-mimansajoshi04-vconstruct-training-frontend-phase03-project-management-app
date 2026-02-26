@@ -3,21 +3,20 @@ import schemaValues from "./schemaValues";
 
 import { createUser } from "../model/user";
 
-const createDB = async (): Promise<IDBDatabase> => {
+const createDB = async (): Promise<IDBDatabase | string> => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(dbSchema.name, dbSchema.version);
+    const REQUEST = indexedDB.open(dbSchema.name, dbSchema.version);
 
-    request.onupgradeneeded = (event: any) => {
-      const db = event?.target?.result ?? null;
-      if (!db) {
-        console.error("Failed to open database.");
+    REQUEST.onupgradeneeded = (event: any) => {
+      const DB = event?.target?.result ?? null;
+      if (!DB) {
         reject("Failed to open database.");
       }
       dbSchema.objectStores.forEach((store) => {
-        if (!db.objectStoreNames.contains(store.name)) {
-          const objectStore = db.createObjectStore(store.name, store.options);
+        if (!DB.objectStoreNames.contains(store.name)) {
+          const STORE = DB.createObjectStore(store.name, store.options);
           store.indexes.forEach(async (index) => {
-            await objectStore.createIndex(
+            await STORE.createIndex(
               index.name,
               index.keyPath,
               index.options,
@@ -27,59 +26,54 @@ const createDB = async (): Promise<IDBDatabase> => {
       });
     };
 
-    request.onsuccess = async () => {
+    REQUEST.onsuccess = async () => {
       try {
         try {
-          const response = await createUser(schemaValues.users.admin);
+          let response = await createUser(schemaValues.users.admin);
           if (!response) reject("Failed to create admin user.");
-          const db = request.result;
-          resolve(db);
+          const DB = REQUEST.result;
+          resolve(DB);
         } catch (error) {
-          console.error("Error creating admin user:", error);
           indexedDB.deleteDatabase(dbSchema.name);
           reject("Error creating admin user, database reset.");
         }
       } catch (error) {
-        console.error("Error creating admin user:", error);
         indexedDB.deleteDatabase(dbSchema.name);
         reject("Error creating admin user, database reset.");
       }
     };
-    request.onerror = (event: any) => {
-      console.error(
-        "Error opening database:",
-        event?.target?.error ?? "Unknown error",
-      );
+    REQUEST.onerror = (event: any) => {
       reject(event?.target?.error ?? "Unknown error");
     };
   });
 };
 
-const getDB = async (): Promise<IDBDatabase> => {
+const getDB = async (): Promise<IDBDatabase|string> => {
   return new Promise(async (resolve, reject) => {
     try {
-      const databases = await indexedDB.databases();
-      const myDataBase = databases.find((db) => db.name === dbSchema.name);
+      let databases = await indexedDB.databases();
+      let myDataBase = databases.find((db) => db.name === dbSchema.name);
       if (!myDataBase) {
         try {
-          const response = await createDB();
-          if (!response) reject("Failed to create database.");
+          let response = await createDB();
+          if (!response || typeof response==="string") {
+            reject("Failed to create database.");
+            return;
+          }
           resolve(response);
         } catch (error) {
-          console.error("Error creating database:", error);
           reject("Error creating database.");
         }
       } else {
-        const request = indexedDB.open(dbSchema.name, dbSchema.version);
+        const REQUEST = indexedDB.open(dbSchema.name, dbSchema.version);
 
-        request.onsuccess = (event: any) => {
-          const db = event?.target?.result ?? null;
-          if (!db) {
-            console.error("Failed to open database.");
+        REQUEST.onsuccess = (event: any) => {
+          const DB = event?.target?.result ?? null;
+          if (!DB) {
             reject("Failed to open database.");
             return;
           }
-          resolve(db);
+          resolve(DB);
         };
       }
     } catch (error) {

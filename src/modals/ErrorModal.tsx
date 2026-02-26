@@ -1,10 +1,13 @@
-import * as React from "react";
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
-import Modal from "@mui/material/Modal";
+// External Libraries
+import { useState, type ReactNode } from 'react';
 
-const style = {
+// MUI Components
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Modal from '@mui/material/Modal';
+
+const MODAL_STYLE = {
   position: "absolute",
   top: "50%",
   left: "50%",
@@ -14,41 +17,49 @@ const style = {
   border: "2px solid #000",
   boxShadow: 24,
   p: 4,
-};
+} as const;
+
+interface ErrorModalProps {
+  messageTitle: string;
+  errorMessage: string;
+  callFunction: () => void;
+  openValue: boolean;
+}
 
 export default function ErrorModal({
+  messageTitle,
   errorMessage,
   callFunction,
   openValue,
-}: {
-  errorMessage: string;
-  callFunction: Function;
-  openValue: Boolean;
-}) {
-  const [open, setOpen] = React.useState(openValue);
+}: ErrorModalProps): ReactNode {
+  const [open, setOpen] = useState(openValue);
+
   const handleClose = () => {
     setOpen(false);
     callFunction();
   };
 
   return (
-    <div>
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box sx={style}>
-          <Typography id="modal-modal-title" variant="h6" component="h2">
-            Registration Failed
-          </Typography>
-          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-            {errorMessage}
-          </Typography>
-          <Button onClick={handleClose}>CLOSE</Button>
-        </Box>
-      </Modal>
-    </div>
+    <Modal
+      open={open}
+      onClose={handleClose}
+      aria-labelledby="error-modal-title"
+      aria-describedby="error-modal-description"
+    >
+      <Box sx={MODAL_STYLE}>
+        <Typography id="error-modal-title" variant="h6" component="h2">
+          {messageTitle}
+        </Typography>
+        <Typography
+          id="error-modal-description"
+          sx={{ mt: 2 }}
+        >
+          {errorMessage}
+        </Typography>
+        <Button onClick={handleClose} sx={{ mt: 2 }}>
+          CLOSE
+        </Button>
+      </Box>
+    </Modal>
   );
 }

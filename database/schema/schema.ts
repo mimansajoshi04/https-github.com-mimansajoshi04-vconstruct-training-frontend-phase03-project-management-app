@@ -12,6 +12,7 @@ const dbSchema = {
         { name: "email", keyPath: "email", options: { unique: true } },
         { name: "role", keyPath: "role", options: { unique: false } },
         { name: "password", keyPath: "password", options: { unique: false } },
+        { name: "avatar_color", keyPath: "avatar_color", options: { unique: false } },
       ],
     },
     // projects
@@ -24,6 +25,11 @@ const dbSchema = {
         {
           name: "description",
           keyPath: "description",
+          options: { unique: false },
+        },
+        {
+          name: "created_by",
+          keyPath: "created_by",
           options: { unique: false },
         },
         {

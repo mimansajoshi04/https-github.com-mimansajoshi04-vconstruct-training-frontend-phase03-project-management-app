@@ -1,67 +1,81 @@
-// mui imports
+// External Libraries
+import { useContext, useState, useCallback, type ReactNode } from "react";
+
+// MUI Components
 import { TextField, Button, Box } from "@mui/material";
 
 // import icons
 import EmailIcon from "@mui/icons-material/Email";
 import PasswordIcon from "@mui/icons-material/Password";
 
-// react imports
-import { useContext, useState } from "react";
-import { useLayoutEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// Custom Hooks
+import { useAuthCheck } from "../hooks/useAuthCheck";
 
-// import values
-import { loginUser } from "../../database/model/user.ts";
-import type { UserType } from "../../database/model/user.ts";
-import UserContext, { type UserContextType } from "../contexts/UserContext.tsx";
+// Constants
+import {
+  ROUTE_PATHS,
+  STORAGE_KEYS,
+  ERROR_TITLES,
+} from "../constants/app.constants";
 
-import ErrorModal from "../modals/ErrorModal.tsx";
-import DBContext from "../contexts/DBContext.tsx";
+// Contexts
+import { UserContext } from "../context/contexts/UserContext";
+import type { UserContextType } from "../context/contexts/UserContext";
 
-export default function Login() {
-  const { user, setUser }: UserContextType = useContext(UserContext);
-  const db = useContext(DBContext);
-  const navigate = useNavigate();
+// Database
+import { loginUser } from "../../database/model/user";
 
-  useLayoutEffect(() => {
-    if (user) navigate("/dashboard");
-  }, []);
+// Components
+import ErrorModal from "../modals/ErrorModal";
 
-  const [formData, setFormData] = useState({
+// Types
+import type { LoginFormData } from "../types";
+
+export default function Login(): ReactNode {
+  useAuthCheck({
+    when: "authenticated",
+    redirectTo: ROUTE_PATHS.DASHBOARD,
+  });
+
+  const { setUser }: UserContextType = useContext(UserContext);
+
+  const [formData, setFormData] = useState<LoginFormData>({
     email: "",
     password: "",
   });
 
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleChange = (
-    event: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }
-    >,
-  ) => {
+  const handleChange = useCallback((event: any) => {
     const { name, value } = event.target;
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
-    });
-  };
+    }));
+  }, []);
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const data = {
-      email: formData.email,
-      password: formData.password.trim(),
-    };
-    try {
-      const response: UserType | null | string = await loginUser(data);
-      localStorage.setItem("user", JSON.stringify(response));
-      setUser(response);
-      navigate("/dashboard");
-    } catch (error: any) {
-      const message: any = error;
-      setErrorMessage(message);
-    }
-  };
+  const handleSubmit = useCallback(
+    async (event: any) => {
+      event.preventDefault();
+
+      const data = {
+        email: formData.email.trim(),
+        password: formData.password.trim(),
+      };
+
+      try {
+        const response = await loginUser(data);
+        if (typeof response !== "string") {
+          localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response));
+          setUser(response);
+        }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        setErrorMessage(message);
+      }
+    },
+    [formData, setUser],
+  );
 
   return (
     <>
@@ -86,13 +100,13 @@ export default function Login() {
       >
         {errorMessage && (
           <ErrorModal
+            messageTitle={ERROR_TITLES.LOGIN_FAILED}
             errorMessage={errorMessage}
             callFunction={() => setErrorMessage("")}
             openValue={true}
           />
         )}
 
-        {/* Email Field */}
         <Box sx={{ display: "flex", alignItems: "flex-end" }}>
           <EmailIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />
           <TextField
@@ -108,7 +122,6 @@ export default function Login() {
           />
         </Box>
 
-        {/* Password Field */}
         <Box sx={{ display: "flex", alignItems: "flex-end" }}>
           <PasswordIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />
           <TextField
@@ -123,10 +136,14 @@ export default function Login() {
             required
           />
         </Box>
-        {/* Submit Button */}
+
         <Button type="submit" variant="contained" size="large">
           Login
         </Button>
+
+        <a style={{ textDecoration: "none" }} href={ROUTE_PATHS.REGISTER}>
+          Do not have an account? Register here
+        </a>
       </Box>
     </>
   );

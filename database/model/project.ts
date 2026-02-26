@@ -1,32 +1,39 @@
+import { getProjectsForUser } from "./assignment";
+
 interface ProjectType {
+  id?: number
   name: string;
   description: string;
+  created_by: number;
   created_at: Date;
   updated_at: Date;
   start_date: Date;
   deadline_date: Date;
+  assignedAt? : Date;
 }
 
 const createProject = (
-  db: IDBDatabase,
+  DB: IDBDatabase,
   projectData: ProjectType,
-): Promise<string> => {
+): Promise<string | { id: number }> => {
   return new Promise(async (resolve, reject) => {
-    if (!db) {
+    if (!DB) {
       console.error("Database connection failed");
       reject("Database connection failed");
       return;
     }
-    const transaction = db.transaction("projects", "readwrite");
-    const store = transaction.objectStore("projects");
-    const addRequest = store.add(projectData);
+    const TRANSACTION = DB.transaction("projects", "readwrite");
+    const STORE = TRANSACTION.objectStore("projects");
+    const ADD_REQUEST = STORE.add(projectData);
 
-    addRequest.onsuccess = () => {
-      console.log("Project added successfully");
-      resolve("Project added successfully.");
+    ADD_REQUEST.onsuccess = (event: any) => {
+      let id = event.target.result;
+      resolve({
+        id: id,
+      });
     };
 
-    addRequest.onerror = (event: any) => {
+    ADD_REQUEST.onerror = (event: any) => {
       console.error("Error adding project:", event.target.error);
       reject("Error adding project: " + event.target.error);
     };
@@ -34,84 +41,84 @@ const createProject = (
 };
 
 const getProjectById = (
-  db: IDBDatabase,
+  DB: IDBDatabase,
   id: number,
 ): Promise<ProjectType | null> => {
   return new Promise((resolve, reject) => {
-    if (!db) {
+    if (!DB) {
       reject("Database connection failed");
       return;
     }
-    const transaction = db.transaction("projects", "readonly");
-    const store = transaction.objectStore("projects");
-    const getRequest = store.get(id);
+    const TRANSACTION = DB.transaction("projects", "readonly");
+    const STORE = TRANSACTION.objectStore("projects");
+    const GET_REQUEST = STORE.get(id);
 
-    getRequest.onsuccess = () => {
-      const project = getRequest.result;
-      if (project) project.id = id; // Ensure the ID is included in the returned project
-      resolve(project || null);
+    GET_REQUEST.onsuccess = () => {
+      let project = GET_REQUEST.result;
+      if (project) project.id = id;
+      resolve(project);
     };
 
-    getRequest.onerror = (event: any) => {
+    GET_REQUEST.onerror = (event: any) => {
       console.error("Error getting project by ID:", event.target.error);
-      reject(event.target.error);
+      reject(null);
     };
   });
 };
 
-const getAllProjects = (db: IDBDatabase): Promise<ProjectType[]> => {
+const getAllProjects = (DB: IDBDatabase): Promise<ProjectType[]> => {
   return new Promise((resolve, reject) => {
-    if (!db) {
+    if (!DB) {
       reject("Database connection failed");
       return;
     }
-    const transaction = db.transaction("projects", "readonly");
-    const store = transaction.objectStore("projects");
-    const getAllRequest = store.getAll();
+    const TRANSACTION = DB.transaction("projects", "readonly");
+    const STORE = TRANSACTION.objectStore("projects");
+    const GET_ALL_REQUEST = STORE.getAll();
 
-    getAllRequest.onsuccess = () => {
-      const projects = getAllRequest.result;
+    GET_ALL_REQUEST.onsuccess = () => {
+      let projects = GET_ALL_REQUEST.result;
       resolve(projects);
     };
 
-    getAllRequest.onerror = (event: any) => {
+    GET_ALL_REQUEST.onerror = (event: any) => {
       console.error("Error getting all projects:", event.target.error);
-      reject(event.target.error);
+      reject([]);
     };
   });
 };
 
 const updateProject = (
-  db: IDBDatabase,
+  DB: IDBDatabase,
   id: number,
   updatedData: Partial<ProjectType>,
-): Promise<string> => {
+): Promise<ProjectType | string> => {
   return new Promise(async (resolve, reject) => {
-    if (!db) {
-      console.error("Database connection failed");
+    if (!DB) {
       reject("Database connection failed");
       return;
     }
-    const transaction = db.transaction("projects", "readwrite");
-    const store = transaction.objectStore("projects");
 
+    const existingProject = await getProjectById(DB, id);
+    if (!existingProject) {
+      reject("Project not found");
+      return;
+    }
     try {
-      const existingProject = await getProjectById(db, id);
-      if (!existingProject) {
-        reject("Project not found");
-        return;
-      }
+      const TRANSACTION = DB.transaction("projects", "readwrite");
+      const STORE = TRANSACTION.objectStore("projects");
 
-      const updatedProject = { ...existingProject, ...updatedData };
-      const updateRequest = store.put(updatedProject, id);
+      let updatedProject = { ...existingProject, ...updatedData };
+      const UPDATE_REQUEST = STORE.put(updatedProject);
 
-      updateRequest.onsuccess = () => {
-        console.log("Project updated successfully");
-        resolve("Project updated successfully.");
+      UPDATE_REQUEST.onsuccess = () => {
+        resolve({
+          ...updatedProject,
+          id: id,
+        });
       };
 
-      updateRequest.onerror = (event: any) => {
-        console.error("Error updating project:", event.target.error);
+      UPDATE_REQUEST.onerror = (event: any) => {
         reject("Error updating project: " + event.target.error);
       };
     } catch (error) {
@@ -120,4 +127,50 @@ const updateProject = (
   });
 };
 
-export { type ProjectType, createProject, getProjectById, getAllProjects, updateProject };
+const getProjectsByUserId = (
+  DB: IDBDatabase,
+  id: number,
+): Promise<{ assignedProjects: ProjectType[]; createdProjects: ProjectType[] }> => {
+  return new Promise((resolve, reject) => {
+    const TRANSACTION = DB.transaction("projects", "readonly");
+    const STORE = TRANSACTION.objectStore("projects");
+
+    const REQUEST = STORE.openCursor();
+    let createdProjects: any[] = [];
+
+    REQUEST.onsuccess = async (event: any) => {
+      const CURSOR = event.target.result;
+
+      if (CURSOR) {
+        if (CURSOR.value.created_by === id) {
+          createdProjects.push(CURSOR.value);
+        }
+
+        CURSOR.continue();
+      } else {
+        try {
+          let assignedProjects = await getProjectsForUser(DB, id);
+
+          resolve({
+            assignedProjects,
+            createdProjects,
+          });
+        } catch (error) {
+          reject(error);
+        }
+      }
+    };
+
+    REQUEST.onerror = (event: any) => {
+      reject(event.target.error);
+    };
+  });
+};
+export {
+  type ProjectType,
+  createProject,
+  getProjectById,
+  getAllProjects,
+  updateProject,
+  getProjectsByUserId,
+};

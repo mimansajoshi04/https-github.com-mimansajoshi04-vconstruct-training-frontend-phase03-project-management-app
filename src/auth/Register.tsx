@@ -1,4 +1,7 @@
-// mui imports
+// External Libraries
+import { useState, useCallback, type ReactNode } from "react";
+
+// MUI Components
 import { TextField, Button, Box } from "@mui/material";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
@@ -11,28 +14,35 @@ import EmailIcon from "@mui/icons-material/Email";
 import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
 import PasswordIcon from "@mui/icons-material/Password";
 
-// react imports
-import { useContext, useState } from "react";
-import { useLayoutEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// Custom Hooks
+import { useAuthCheck } from "../hooks/useAuthCheck";
 
-// import values
-import schemaValues from "../../database/schema/schemaValues.ts";
-import { createUser } from "../../database/model/user.ts";
-import type { UserType } from "../../database/model/user.ts";
-import UserContext, { type UserContextType } from "../contexts/UserContext.tsx";
+// Constants
+import {
+  ROUTE_PATHS,
+  MIN_PASSWORD_LENGTH,
+  MIN_NAME_LENGTH,
+  VALIDATION_MESSAGES,
+  ERROR_TITLES,
+} from "../constants/app.constants";
 
-import ErrorModal from "../modals/ErrorModal.tsx";
+// Database
+import { createUser } from "../../database/model/user";
+import schemaValues from "../../database/schema/schemaValues";
 
-export default function Register() {
-  const { user, setUser }: UserContextType = useContext(UserContext);
-  const navigate = useNavigate();
+// Components
+import ErrorModal from "../modals/ErrorModal";
 
-  useLayoutEffect(() => {
-    if (user) navigate("/dashboard");
-  }, []);
+// Types
+import type { RegisterFormData } from "../types";
 
-  const [formData, setFormData] = useState({
+export default function Register(): ReactNode {
+  useAuthCheck({
+    when: "authenticated",
+    redirectTo: ROUTE_PATHS.DASHBOARD,
+  });
+
+  const [formData, setFormData] = useState<RegisterFormData>({
     name: "",
     email: "",
     role: "",
@@ -42,55 +52,62 @@ export default function Register() {
 
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleChange = (
-    event: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }
-    >,
-  ) => {
+  const handleChange = useCallback((event: any) => {
     const { name, value } = event.target;
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
-    });
-  };
+    }));
+  }, []);
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    // Here you can call your API to register the user
-    const pwd = formData.password.trim();
+  const validateForm = useCallback((): boolean => {
+    const trimmedName = formData.name.trim();
+    const trimmedPassword = formData.password.trim();
+    const trimmedConfirmPassword = formData.confirmPassword.trim();
 
-    if (!(formData.name.trim().length > 0)) {
-      setErrorMessage("Invalid Name");
-      return;
+    if (trimmedName.length < MIN_NAME_LENGTH) {
+      setErrorMessage(VALIDATION_MESSAGES.INVALID_NAME);
+      return false;
     }
 
-    if (pwd.length < 6) {
-      setErrorMessage("Password must be atleast 6 characters long");
-      return;
+    if (trimmedPassword.length < MIN_PASSWORD_LENGTH) {
+      setErrorMessage(VALIDATION_MESSAGES.INVALID_PASSWORD_LENGTH);
+      return false;
     }
 
-    if (pwd !== formData.confirmPassword.trim()) {
-      setErrorMessage("Passwords do not match.");
-      return;
+    if (trimmedPassword !== trimmedConfirmPassword) {
+      setErrorMessage(VALIDATION_MESSAGES.PASSWORD_MISMATCH);
+      return false;
     }
 
-    const data = {
-      name: formData.name,
-      email: formData.email,
-      role: formData.role,
-      password: formData.password,
-    };
-    try {
-      const response: UserType | null = await createUser(data);
-      localStorage.setItem("user", JSON.stringify(response));
-      setUser(response);
-      navigate("/dashboard");
-    } catch (error: any) {
-      const message: any = error;
-      console.log(typeof error);
-      setErrorMessage(message);
-    }
-  };
+    return true;
+  }, [formData]);
+
+  const handleSubmit = useCallback(
+    async (event: any) => {
+      event.preventDefault();
+
+      if (!validateForm()) {
+        return;
+      }
+
+      const data = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        role: formData.role,
+        password: formData.password.trim(),
+      };
+
+      try {
+        await createUser(data);
+        window.location.href = ROUTE_PATHS.LOGIN;
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        setErrorMessage(message);
+      }
+    },
+    [formData, validateForm],
+  );
 
   return (
     <>
@@ -115,12 +132,13 @@ export default function Register() {
       >
         {errorMessage && (
           <ErrorModal
+            messageTitle={ERROR_TITLES.REGISTRATION_FAILED}
             errorMessage={errorMessage}
             callFunction={() => setErrorMessage("")}
             openValue={true}
           />
         )}
-        {/* Name Field */}
+
         <Box sx={{ display: "flex", alignItems: "flex-end" }}>
           <AccountCircle sx={{ color: "action.active", mr: 1, my: 0.5 }} />
           <TextField
@@ -135,7 +153,6 @@ export default function Register() {
           />
         </Box>
 
-        {/* Email Field */}
         <Box sx={{ display: "flex", alignItems: "flex-end" }}>
           <EmailIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />
           <TextField
@@ -151,7 +168,6 @@ export default function Register() {
           />
         </Box>
 
-        {/* Role Select */}
         <Box sx={{ display: "flex", alignItems: "flex-end" }}>
           <SupervisorAccountIcon
             sx={{ color: "action.active", mr: 1, my: 0.5 }}
@@ -181,7 +197,6 @@ export default function Register() {
           </FormControl>
         </Box>
 
-        {/* Password Field */}
         <Box sx={{ display: "flex", alignItems: "flex-end" }}>
           <PasswordIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />
           <TextField
@@ -197,7 +212,6 @@ export default function Register() {
           />
         </Box>
 
-        {/* Confirm Password Field */}
         <Box sx={{ display: "flex", alignItems: "flex-end" }}>
           <PasswordIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />
           <TextField
@@ -213,10 +227,13 @@ export default function Register() {
           />
         </Box>
 
-        {/* Submit Button */}
         <Button type="submit" variant="contained" size="large">
           Register
         </Button>
+
+        <a style={{ textDecoration: "none" }} href={ROUTE_PATHS.LOGIN}>
+          Already have an account? Login here
+        </a>
       </Box>
     </>
   );

@@ -1,24 +1,39 @@
+import { getUserById, type UserType } from "./user";
+
 interface ProjectUserRelation {
+  id?: number;
   projectId: number;
   userId: number;
   assignedAt: Date;
 }
 
+interface ProjectForUserType {
+  id: number;
+  name: string;
+  description: string;
+  created_by: number;
+  assigned_by: number;
+  created_at: Date;
+  updated_at: Date;
+  start_date: Date;
+  deadline_date: Date;
+}
+
 const createProjectUserRelation = (
   db: IDBDatabase,
   relation: ProjectUserRelation,
-) => {
+): Promise<string> => {
   // logic to create a project-user relation in the database
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction("project_user_relation", "readwrite");
-    const store = transaction.objectStore("project_user_relation");
-    const request = store.add(relation);
+    const TRANSACTION = db.transaction("project_user_relation", "readwrite");
+    const STORE = TRANSACTION.objectStore("project_user_relation");
+    const REQUEST = STORE.add(relation);
 
-    request.onsuccess = () => {
+    REQUEST.onsuccess = () => {
       resolve("Project-user relation created successfully");
     };
 
-    request.onerror = (event) => {
+    REQUEST.onerror = (event) => {
       console.error("Error creating project-user relation:", event);
       reject(event);
     };
@@ -28,42 +43,107 @@ const createProjectUserRelation = (
 const getUsersForProject = (
   db: IDBDatabase,
   projectId: number,
-): Promise<ProjectUserRelation[] | null> => {
+): Promise<UserType[]> => {
   // logic to get all users assigned to a specific project
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction("project_user_relation", "readonly");
-    const store = transaction.objectStore("project_user_relation");
-    const index = store.index("project_id");
-    const request = index.getAll(projectId);
+    const TRANSACTION = db.transaction("project_user_relation", "readonly");
+    const STORE = TRANSACTION.objectStore("project_user_relation");
+    const INDEX = STORE.index("id");
+    const REQUEST = INDEX.getAll();
 
-    request.onsuccess = () => {
-      resolve(request.result);
+    REQUEST.onsuccess = () => {
+      const RESULT = REQUEST.result;
+      const DATA = RESULT.filter((p) => p.projectId == projectId);
+
+      let totalMembers = DATA.length;
+      let members: UserType[] = [];
+      let completed = 0;
+
+      DATA.forEach(async (relation) => {
+        let userId = relation.userId;
+        try {
+          let member = await getUserById(db, userId);
+          if(typeof member!=="string")
+          members.push(member);
+          completed++;
+
+          if (completed == totalMembers) {
+            resolve(members);
+          }
+        } catch (error) {
+          console.error(error);
+          completed++;
+
+          if (completed == totalMembers) {
+            resolve(members);
+          }
+        }
+      });
     };
 
-    request.onerror = (event) => {
+    REQUEST.onerror = (event) => {
       console.error("Error getting users for project:", event);
       reject(null);
     };
   });
 };
 
+
 const getProjectsForUser = (
   db: IDBDatabase,
   userId: number,
-): Promise<ProjectUserRelation[] | null> => {
-  // logic to get all projects a specific user is assigned to
+): Promise<ProjectForUserType[]> => {
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction("project_user_relation", "readonly");
-    const store = transaction.objectStore("project_user_relation");
-    const index = store.index("user_id");
-    const request = index.getAll(userId);
+    const TRANSACTION = db.transaction("project_user_relation", "readonly");
+    const STORE = TRANSACTION.objectStore("project_user_relation");
+    const REQUEST = STORE.getAll();
 
-    request.onsuccess = () => {
-      resolve(request.result);
+    REQUEST.onsuccess = () => {
+      let userProjects = REQUEST.result.filter(
+        (proj) => proj.userId === userId,
+      );
+
+      if (userProjects.length === 0) {
+        resolve([]);
+        return;
+      }
+
+      const PROJECT_TX = db.transaction("projects", "readonly");
+      const PROJECT_STR = PROJECT_TX.objectStore("projects");
+
+      const projectDetails: ProjectForUserType[] = [];
+      let completed = 0;
+
+      userProjects.forEach((project) => {
+        const REQUEST_PROJ = PROJECT_STR.get(project.projectId);
+
+        REQUEST_PROJ.onsuccess = () => {
+          if (REQUEST_PROJ.result) {
+            projectDetails.push({
+              ...REQUEST_PROJ.result,
+              assignedAt: project.assignedAt,
+            });
+          }
+
+          completed++;
+
+          if (completed === userProjects.length) {
+            resolve(projectDetails);
+          }
+        };
+
+        REQUEST_PROJ.onerror = () => {
+          completed++;
+
+          if (completed === userProjects.length) {
+            resolve(projectDetails);
+          }
+        };
+      });
     };
-    request.onerror = (event) => {
-      console.error("Error getting projects for user:", event);
-      reject(null);
+
+    REQUEST.onerror = () => {
+      reject(new Error("Error getting projects for user"));
     };
   });
 };
@@ -75,22 +155,22 @@ const removeUserFromProject = (
 ): Promise<string> => {
   // logic to remove a user from a project
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction("project_user_relation", "readwrite");
-    const store = transaction.objectStore("project_user_relation");
-    const index = store.index("project_id");
-    const request = index.getAll(projectId);
+    const TRANSACTION = db.transaction("project_user_relation", "readwrite");
+    const STORE = TRANSACTION.objectStore("project_user_relation");
+    const INDEX = STORE.index("project_id");
+    const REQUEST = INDEX.getAll(projectId);
 
-    request.onsuccess = () => {
-      const relations = request.result as ProjectUserRelation[];
-      const relationToRemove = relations.find(
+    REQUEST.onsuccess = () => {
+      let relations = REQUEST.result as ProjectUserRelation[];
+      let relationToRemove = relations.find(
         (relation) => relation.userId === userId,
       );
       if (relationToRemove) {
-        const deleteRequest = store.delete(relationToRemove.projectId);
-        deleteRequest.onsuccess = () => {
+        const DELETE_REQUEST = STORE.delete(relationToRemove.projectId);
+        DELETE_REQUEST.onsuccess = () => {
           resolve("User removed from project successfully");
         };
-        deleteRequest.onerror = (event) => {
+        DELETE_REQUEST.onerror = (event) => {
           console.error("Error removing user from project:", event);
           reject("Error removing user from project");
         };
@@ -99,7 +179,7 @@ const removeUserFromProject = (
       }
     };
 
-    request.onerror = (event) => {
+    REQUEST.onerror = (event) => {
       console.error("Error finding user in project:", event);
       reject("Error finding user in project");
     };

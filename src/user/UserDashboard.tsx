@@ -1,8 +1,19 @@
-import { useContext } from "react";
-import UserContext, { type UserContextType } from "../contexts/UserContext";
+// External Libraries
+import { useContext, type ReactNode } from "react";
 
-export default function UserDashboard() {
-  const { user, setUser }: UserContextType = useContext(UserContext);
+// Contexts
+import { UserContext } from "../context/contexts/UserContext";
+import type { UserContextType } from "../context/contexts/UserContext";
+
+import {useAuthCheck} from "../hooks/index"
+
+export default function UserDashboard(): ReactNode {
+  useAuthCheck({
+    redirectTo: "/login",
+    when: "unauthenticated",
+  });
+
+  const { user }: UserContextType = useContext(UserContext);
 
   return (
     <>

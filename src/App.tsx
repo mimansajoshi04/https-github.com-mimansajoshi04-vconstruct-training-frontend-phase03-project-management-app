@@ -1,47 +1,67 @@
-// CSS Files
-import "./App.css";
+// External Libraries
+import { useContext } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+
+// Custom Hooks
+import { useAuthInitialize } from './hooks/useAuthInitialize';
 
 // Contexts
-import UserContext from "./contexts/UserContext.tsx";
+import {UserContext} from './context/contexts/UserContext';
+import type { UserContextType } from './context/contexts/UserContext';
 
-// react imports
-import { useContext, useEffect } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+// Constants
+import { ROUTE_PATHS, USER_ROLES } from './constants/app.constants';
 
-// import functions
+// Pages
+import Login from './auth/Login';
+import Register from './auth/Register';
+import Dashboard from './Views/Dashboard';
+import AdminDashboard from './admin/views/AdminDashboard';
+import UserDashboard from './user/UserDashboard';
+import Users from './Views/Users';
+import AdminProjects from './admin/components/projects/AdminProjects';
+import UserProjects from './user/UserProjects';
+import ProjectDetails from './common/projects/ProjectDetails';
 
-// import types
-import type { UserContextType } from "./contexts/UserContext.tsx";
+function App(): React.ReactElement {
+  useAuthInitialize();
 
-import Login from "./auth/Login.tsx";
-import Register from "./auth/Register.tsx";
-import Dashboard from "./Views/DashBoard.tsx";
-
-function App() {
-  const { user, setUser }: UserContextType = useContext(UserContext);
-
-  useEffect(() => {
-    const userDetails = localStorage.getItem("user");
-    if (userDetails) {
-      setUser(JSON.parse(userDetails));
-    }
-  }, []);
+  const { user }: UserContextType = useContext(UserContext);
+  const isAdmin = user?.role === USER_ROLES.ADMIN;
 
   return (
     <Routes>
       <Route
-        path="/dashboard"
-        element={user ? <Dashboard /> : <Navigate to="/login" />}
-      />
+        path={ROUTE_PATHS.DASHBOARD}
+        element={user ? <Dashboard /> : <Navigate to={ROUTE_PATHS.LOGIN} />}
+      >
+        <Route
+          index
+          element={isAdmin ? <AdminDashboard /> : <UserDashboard />}
+        />
+
+        <Route path="projects">
+          <Route
+            index
+            element={isAdmin ? <AdminProjects /> : <UserProjects />}
+          />
+          <Route path=":id/:type" element={<ProjectDetails />} />
+        </Route>
+
+        {isAdmin && <Route path="users" element={<Users />} />}
+      </Route>
+
       <Route
-        path="/login"
-        element={user ? <Navigate to="/dashboard" /> : <Login />}
+        path={ROUTE_PATHS.LOGIN}
+        element={user ? <Navigate to={ROUTE_PATHS.DASHBOARD} /> : <Login />}
       />
+
       <Route
-        path="/register"
-        element={user ? <Navigate to="/dashboard" /> : <Register />}
+        path={ROUTE_PATHS.REGISTER}
+        element={user ? <Navigate to={ROUTE_PATHS.DASHBOARD} /> : <Register />}
       />
-      <Route path="*" element={<Navigate to="/login" />} />
+
+      <Route path="*" element={<Navigate to={ROUTE_PATHS.LOGIN} />} />
     </Routes>
   );
 }
