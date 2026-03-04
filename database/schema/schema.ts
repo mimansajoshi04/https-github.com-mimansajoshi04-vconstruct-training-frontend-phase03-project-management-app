@@ -85,6 +85,7 @@ const dbSchema = {
           options: { unique: false },
         },
         { name: "user_id", keyPath: "user_id", options: { unique: false } },
+        {name: "created_by", keyPath: "created_by", options: {unique: false}}
       ],
     },
     // assignments

@@ -27,16 +27,36 @@ const createProjectUserRelation = (
   return new Promise((resolve, reject) => {
     const TRANSACTION = db.transaction("project_user_relation", "readwrite");
     const STORE = TRANSACTION.objectStore("project_user_relation");
-    const REQUEST = STORE.add(relation);
+    const INDEX = STORE.index("id");
+    const GET_REQUEST = INDEX.getAll();
 
-    REQUEST.onsuccess = () => {
-      resolve("Project-user relation created successfully");
+    GET_REQUEST.onsuccess = () => {
+      let result = GET_REQUEST.result;
+      let existingRelation = result.filter(
+        (r) => r.userId == relation.userId && r.projectId == relation.projectId,
+      );
+
+      if (existingRelation.length > 0) {
+        reject("Cannot create a new relation!");
+        return;
+      }
+
+      const REQUEST = STORE.add(relation);
+
+      REQUEST.onsuccess = () => {
+        resolve("Project-user relation created successfully");
+      };
+
+      REQUEST.onerror = (event) => {
+        console.error("Error creating project-user relation:", event);
+        reject(event);
+      };
     };
 
-    REQUEST.onerror = (event) => {
-      console.error("Error creating project-user relation:", event);
-      reject(event);
-    };
+    GET_REQUEST.onerror = (error:any) =>{
+      let message = error instanceof Error ? error.message : error;
+      reject(message);
+    }
   });
 };
 
@@ -63,8 +83,11 @@ const getUsersForProject = (
         let userId = relation.userId;
         try {
           let member = await getUserById(db, userId);
-          if(typeof member!=="string")
-          members.push(member);
+          if (typeof member !== "string")
+            members.push({
+              ...member,
+              id: userId,
+            });
           completed++;
 
           if (completed == totalMembers) {
@@ -87,7 +110,6 @@ const getUsersForProject = (
     };
   });
 };
-
 
 const getProjectsForUser = (
   db: IDBDatabase,

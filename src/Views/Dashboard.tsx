@@ -1,17 +1,16 @@
 // External Libraries
-import {
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { useContext, useEffect, useState, type ReactNode } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
 // MUI Components
 import { Box } from "@mui/material";
 
 // Toolpad Components
-import { AppProvider, type Navigation } from "@toolpad/core/AppProvider";
+import {
+  AppProvider,
+  type Navigation,
+  type NavigationItem,
+} from "@toolpad/core/AppProvider";
 import { DashboardLayout } from "@toolpad/core/DashboardLayout";
 
 // MUI Icons
@@ -30,46 +29,18 @@ import {
 // Contexts
 import { UserContext } from "../context/contexts/UserContext";
 import type { UserContextType } from "../context/contexts/UserContext";
-import DBContext from "../context/contexts/DBContext";
 import {
   AllProjectContext,
   AllUserContext,
 } from "../context/contexts/AppContext";
 
-// Services
-import { getAllDataForAdminUser } from "../admin/services/getData";
-import { getAllDataForUser } from "../user/services/getData";
-import { getAllUsers } from "../../database/model/user";
-
 // Types
 import type { ProjectDataStructure } from "../types";
-import type { UserType } from "../../database/model/user";
+import { type UserType } from "../../database/model/user";
 import type { ProjectType } from "../../database/model/project";
-
-const ADMIN_NAVIGATION: Navigation = [
-  { kind: "header", title: "Main items" },
-  { segment: "", title: "Dashboard", icon: <DashboardIcon /> },
-  { segment: "projects", title: "Projects", icon: <AccountTreeIcon /> },
-  { segment: "users", title: "All Users", icon: <GroupIcon /> },
-  { kind: "divider" },
-  {
-    segment: "logout",
-    title: "Logout",
-    icon: <LogoutIcon />,
-  },
-];
-
-const USER_NAVIGATION: Navigation = [
-  { kind: "header", title: "Main items" },
-  { segment: "", title: "Dashboard", icon: <DashboardIcon /> },
-  { segment: "projects", title: "Projects", icon: <AccountTreeIcon /> },
-  { kind: "divider" },
-  {
-    segment: "logout",
-    title: "Logout",
-    icon: <LogoutIcon />,
-  },
-];
+import DBContext from "../context/contexts/DBContext";
+import { getAllDataForAdminUser } from "../admin/services/getData";
+import { getAllDataForUser } from "../user/services/getData";
 
 export default function DashBoard(): ReactNode {
   // Context
@@ -80,47 +51,143 @@ export default function DashBoard(): ReactNode {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // State
-  const [allUsers, setAllUsers] = useState<UserType[] | null>([]);
+  // State mirrored from hooks so child components can mutate through context
+  const [allUsers, setAllUsers] = useState<UserType[] | null>(null);
   const [allProjects, setAllProjects] = useState<
     ProjectDataStructure | ProjectType[] | null
   >(null);
 
+  useEffect(() => {
+    async function loadData() {
+      try {
+        if (!db) {
+          throw new Error("DB Not found");
+        }
+
+        const data =
+          user?.role === "admin"
+            ? await getAllDataForAdminUser(db)
+            : await getAllDataForUser(db, user?.id ?? -1);
+        if (!data) {
+          throw new Error("Data could not be fetched!");
+        }
+        setAllProjects(data.projectData);
+        setAllUsers(data.userData);
+      } catch (error) {
+        //catch error
+      }
+    }
+
+    loadData();
+  }, []);
+
+  const adminProjectsChildren: NavigationItem[] =
+    Array.isArray(allProjects) && allProjects.length > 0
+      ? [
+          {
+            segment: "all",
+            title: "All Projects",
+          },
+          {
+            kind: "divider",
+          },
+
+          ...allProjects.map((project) => ({
+            segment: `admin/${project.id}`,
+            title: project.name,
+          })),
+        ]
+      : [
+          {
+            segment: "all",
+            title: "All Projects",
+          },
+        ];
+
+  const ADMIN_NAVIGATION: Navigation = [
+    { kind: "header", title: "Main items" },
+    { segment: "", title: "Dashboard", icon: <DashboardIcon /> },
+    {
+      segment: "projects",
+      title: "Projects",
+      icon: <AccountTreeIcon />,
+      children: adminProjectsChildren,
+    },
+    { segment: "users", title: "All Users", icon: <GroupIcon /> },
+    { kind: "divider" },
+    {
+      segment: "logout",
+      title: "Logout",
+      icon: <LogoutIcon />,
+    },
+  ];
+
+  const userProjectsChildren: NavigationItem[] =
+    allProjects && !Array.isArray(allProjects)
+      ? [
+          {
+            segment: "all",
+            title: "All Projects",
+          },
+          {
+            kind: "divider",
+          },
+
+          ...(allProjects.createdProjects?.length
+            ? [
+                {
+                  segment: "created",
+                  title: "Created",
+                  children: allProjects.createdProjects.map((project) => ({
+                    segment: `${project.id}`,
+                    title: project.name,
+                  })),
+                },
+              ]
+            : []),
+
+          ...(allProjects.assignedProjects?.length
+            ? [
+                {
+                  segment: "assigned",
+                  title: "Assigned",
+                  children: allProjects.assignedProjects.map((project) => ({
+                    segment: `${project.id}`,
+                    title: project.name,
+                  })),
+                },
+              ]
+            : []),
+        ]
+      : [
+          {
+            segment: "all",
+            title: "All Projects",
+          },
+        ];
+
+  const USER_NAVIGATION: Navigation = [
+    { kind: "header", title: "Main items" },
+    { segment: "", title: "Dashboard", icon: <DashboardIcon /> },
+    {
+      segment: "projects",
+      title: "Projects",
+      icon: <AccountTreeIcon />,
+      children: userProjectsChildren,
+    },
+    { kind: "divider" },
+    {
+      segment: "logout",
+      title: "Logout",
+      icon: <LogoutIcon />,
+    },
+  ];
 
   const logout = () => {
     localStorage.removeItem(STORAGE_KEYS.USER);
     setUser(null);
     navigate(ROUTE_PATHS.LOGIN, { replace: true });
   };
-
-  const loadData = async () => {
-    if (!user?.role || !db) return;
-
-    try {
-      if (user.role === USER_ROLES.ADMIN) {
-        const data = await getAllDataForAdminUser(db);
-        setAllUsers(data.userData || []);
-        setAllProjects(data.projectData || {});
-      } else {
-        const allUsersData = await getAllUsers(db);
-        const filteredUsers = allUsersData.filter(
-          (userData: UserType) =>
-            userData.role !== USER_ROLES.ADMIN && userData.id !== user.id,
-        );
-
-        const data = await getAllDataForUser(db, user?.id ?? -1);
-        setAllProjects(data.projectData || {});
-        setAllUsers(filteredUsers);
-      }
-    } catch (error) {
-      console.error("Failed to load dashboard data:", error);
-    }
-  };
-
-  // Fetch data when user changes
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const handleNavigation = (segment: string) => {
     if (segment === "/logout") {

@@ -9,30 +9,21 @@ import { getUsersForProject } from "../../../database/model/assignment";
 import { useAuthCheck } from "../../hooks";
 
 import ProjectMembers from "./ProjectMembers";
+import StorySummary from "./StorySummary";
+import AboutProject from "./AboutProject";
 
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Typography,
-  Divider,
-  Chip,
-  Stack,
-} from "@mui/material";
+import { Box, Button, Stack } from "@mui/material";
 
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import EditProjectFormDialog from "./EditProjectFormDialog";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import EventIcon from "@mui/icons-material/Event";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 
 export default function ProjectDetails() {
   useAuthCheck({
     redirectTo: "/login",
     when: "unauthenticated",
   });
+
   const navigate = useNavigate();
   const { id, type } = useParams();
 
@@ -85,7 +76,7 @@ export default function ProjectDetails() {
 
   useEffect(() => {
     if (!project) {
-      navigate("/dashboard/projects", { replace: true });
+      navigate("/dashboard/projects/all", { replace: true });
     }
   }, [project, navigate]);
 
@@ -103,11 +94,10 @@ export default function ProjectDetails() {
     }
 
     fetchMembers();
-  }, [project?.id, db]);
+  }, [projects, project?.id, db]);
 
   if (!project) return null;
 
-  const isOverdue = new Date(project.deadline_date) < new Date();
   let isAssigned = type === "assigned";
 
   return (
@@ -123,7 +113,7 @@ export default function ProjectDetails() {
         <Button
           variant="outlined"
           startIcon={<ArrowBackRoundedIcon />}
-          onClick={() => navigate("/dashboard/projects")}
+          onClick={() => navigate("/dashboard/projects/all")}
         >
           See All Projects
         </Button>
@@ -138,88 +128,15 @@ export default function ProjectDetails() {
         )}
       </Stack>
 
-      <Card sx={{ mt: 4, borderRadius: 3 }}>
-        <CardContent>
-          <Stack spacing={2}>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="flex-start"
-            >
-              <Typography variant="h5">{project.name}</Typography>
+      <AboutProject project={project} isAssigned={isAssigned} />
 
-              <Chip
-                label={isOverdue ? "Overdue" : "Active"}
-                color={isOverdue ? "error" : "success"}
-              />
-            </Stack>
-            <Typography variant="body1" sx={{ color: "text.secondary" }}>
-              {project.description}
-            </Typography>
-            <Divider />
-            <Stack
-              spacing={1}
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-              }}
-            >
-              <Stack direction="row" sx={{ justifyContent: "space-between" }}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <AccessTimeIcon
-                    sx={{ fontSize: 16, color: "primary.main" }}
-                  />
-                  <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                    Start: {new Date(project.start_date).toLocaleDateString()}
-                  </Typography>
-                </Stack>
+      <StorySummary projectId={projectId} type={type ?? ""} />
 
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <EventIcon sx={{ fontSize: 16, color: "error.main" }} />
-                  <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                    Deadline:{" "}
-                    {new Date(project.deadline_date).toLocaleDateString()}
-                  </Typography>
-                </Stack>
-
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <CalendarTodayIcon
-                    sx={{ fontSize: 16, color: "text.secondary" }}
-                  />
-                  <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                    Created: {new Date(project.created_at).toLocaleDateString()}
-                  </Typography>
-                </Stack>
-
-                {isAssigned && project.assignedAt && (
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <CalendarTodayIcon
-                      sx={{ fontSize: 16, color: "text.secondary" }}
-                    />
-                    <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                      Assigned:{" "}
-                      {new Date(project.assignedAt).toLocaleDateString()}
-                    </Typography>
-                  </Stack>
-                )}
-
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <AccessTimeIcon
-                    sx={{ fontSize: 16, color: "primary.main" }}
-                  />
-
-                  <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                    Last Updated:{" "}
-                    {new Date(project.updated_at).toLocaleDateString()}
-                  </Typography>
-                </Stack>
-              </Stack>
-            </Stack>
-          </Stack>
-        </CardContent>
-      </Card>
-
-      <ProjectMembers members={members} />
+      <ProjectMembers
+        members={members}
+        projectId={project?.id ?? -1}
+        showAssignMembers={!isAssigned || isAdmin}
+      />
     </Box>
   );
 }

@@ -72,11 +72,11 @@ const ProjectCards = memo(function ProjectCardsComponent({
 
   const handleViewProject = (project: ProjectType) => {
     if (isAdmin) {
-      navigate(`/dashboard/projects/${project.id}/admin`);
+      navigate(`/dashboard/projects/admin/${project.id}`);
     } else if (isProjectAssigned(project)) {
-      navigate(`/dashboard/projects/${project.id}/assigned`);
+      navigate(`/dashboard/projects/assigned/${project.id}`);
     } else {
-      navigate(`/dashboard/projects/${project.id}/created`);
+      navigate(`/dashboard/projects/created/${project.id}`);
     }
   };
 
@@ -100,7 +100,7 @@ const ProjectCards = memo(function ProjectCardsComponent({
         <EditProjectFormDialog
           setEditProjectOpen={handleCloseEditForm}
           project={selectedProject}
-          type= {isAdmin ? "admin" : "created"}
+          type={isAdmin ? "admin" : "created"}
         />
       )}
 
@@ -146,7 +146,6 @@ const ProjectCards = memo(function ProjectCardsComponent({
               >
                 <CardContent>
                   <Stack spacing={1}>
-                    {/* Title + Status */}
                     <Stack direction="row" spacing={1} alignItems="flex-start">
                       <Typography
                         variant="h6"
@@ -170,7 +169,6 @@ const ProjectCards = memo(function ProjectCardsComponent({
                       />
                     </Stack>
 
-                    {/* Description */}
                     <Typography
                       variant="body2"
                       sx={{ color: "text.secondary" }}
@@ -180,7 +178,6 @@ const ProjectCards = memo(function ProjectCardsComponent({
 
                     <Divider />
 
-                    {/* Dates */}
                     <Typography variant="caption">
                       Start: {new Date(project.start_date).toLocaleDateString()}
                     </Typography>

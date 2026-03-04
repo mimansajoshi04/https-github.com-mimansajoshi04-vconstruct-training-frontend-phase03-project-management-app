@@ -2,6 +2,7 @@ import { getInitials } from "../../../database/createAvatar";
 // mui imports
 import {
   Box,
+  Button,
   Stack,
   TextField,
   InputAdornment,
@@ -14,25 +15,47 @@ import {
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from "@mui/material";
 
 import SearchIcon from "@mui/icons-material/Search";
 
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useMemo } from "react";
 
 import type { UserType } from "../../../database/model/user";
+import {
+  AllProjectContext,
+  AllUserContext,
+} from "../../context/contexts/AppContext";
 
-import {useAuthCheck} from "../../hooks/index"
+import { useAuthCheck } from "../../hooks/index";
 
-export default function ProjectMembers({ members }: { members: UserType[] }) {
+export default function ProjectMembers({
+  members,
+  projectId,
+  showAssignMembers,
+}: {
+  members: UserType[];
+  projectId: number;
+  showAssignMembers: boolean;
+}) {
   useAuthCheck({
     redirectTo: "/login",
     when: "unauthenticated",
   });
 
+  if (projectId == -1) return <></>;
+
   const [query, setQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
+  const { setProjects } = useContext(AllProjectContext);
+
+  const [assignMembersOpen, setAssignMembersOpen] = useState(false);
 
   const filteredUsers = useMemo(() => {
     if (!members) return [];
@@ -56,8 +79,22 @@ export default function ProjectMembers({ members }: { members: UserType[] }) {
     setQuery(value);
   };
 
+  const getIds = (): number[] => {
+    let res: number[] = [];
+    if (members.length == 0) return res;
+    return members.map((m) => m?.id ?? -2);
+  };
+
   return (
     <Box sx={{ mt: 5 }}>
+      {showAssignMembers && assignMembersOpen && (
+        <AssignNewMembers
+          setAssignMembersOpen={setAssignMembersOpen}
+          memberIds={getIds()}
+          projectId={projectId}
+          setProjects={setProjects}
+        />
+      )}
       <Typography variant="h6" sx={{ mb: 2 }}>
         Project Members
       </Typography>
@@ -68,9 +105,14 @@ export default function ProjectMembers({ members }: { members: UserType[] }) {
         alignItems="center"
         marginBottom="0.5rem"
       >
-        {/* <Button variant="contained" onClick={() => setAddUserOpen(true)}>
-          Add New User
-        </Button> */}
+        {showAssignMembers && (
+          <Button
+            variant="contained"
+            onClick={() => setAssignMembersOpen(true)}
+          >
+            Assign New Members
+          </Button>
+        )}
 
         <FormControl size="small" sx={{ minWidth: 140 }}>
           <InputLabel id="role-select-label">Role</InputLabel>
@@ -157,5 +199,108 @@ export default function ProjectMembers({ members }: { members: UserType[] }) {
         </Box>
       )}
     </Box>
+  );
+}
+
+import { MultipleSelectCheckmarks } from "./NewProjectFormDialog";
+
+import DBContext from "../../context/contexts/DBContext";
+import { createProjectUserRelation } from "../../../database/model/assignment";
+import { getAllDataForAdminUser } from "../../admin/services/getData";
+import { getAllDataForUser } from "../../user/services/getData";
+import { UserContext } from "../../context/contexts/UserContext";
+
+export function AssignNewMembers({
+  setAssignMembersOpen,
+  memberIds,
+  projectId,
+  setProjects,
+}: {
+  setAssignMembersOpen: Function;
+  memberIds: number[];
+  projectId: number;
+  setProjects: Function;
+}) {
+  const db = useContext(DBContext);
+  const { user } = useContext(UserContext);
+  const { users } = useContext(AllUserContext);
+
+  const [members, setMembers] = useState<number[]>(memberIds || []);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [open, setOpen] = useState(true);
+
+  // Filter to show only unassigned members
+  const unassignedUsers = useMemo(() => {
+    if (!users) return [];
+    return users.filter((user) => !memberIds.includes(user?.id ?? -1));
+  }, [users, memberIds]);
+
+  const handleClose = () => {
+    setOpen(false);
+    setAssignMembersOpen(false);
+  };
+
+  const handleChange = (value: number[]) => {
+    setMembers(value);
+  };
+
+  const handleSubmit = async (event: any) => {
+    event.preventDefault();
+
+    try {
+      if (!db) return;
+
+      const date = new Date();
+
+      const newMembers = members.filter((id) => !memberIds.includes(id));
+
+      for (const memberId of newMembers) {
+        await createProjectUserRelation(db, {
+          projectId: Number(projectId),
+          userId: Number(memberId),
+          assignedAt: date,
+        });
+      }
+
+      let data;
+      if (user?.role !== "admin") {
+        data = await getAllDataForUser(db, user?.id ?? -1);
+      } else {
+        data = await getAllDataForAdminUser(db);
+      }
+
+      setProjects(data.projectData || {});
+      handleClose();
+    } catch (error) {
+      setErrorMessage("Failed to assign members.");
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={handleClose}>
+      <DialogTitle>Assign Members</DialogTitle>
+
+      <DialogContent>
+        {errorMessage && (
+          <DialogContentText sx={{ color: "red" }}>
+            {errorMessage}
+          </DialogContentText>
+        )}
+
+        <form onSubmit={handleSubmit} id="assign-members-form">
+          <MultipleSelectCheckmarks
+            users={unassignedUsers}
+            onChange={handleChange}
+          />
+        </form>
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={handleClose}>Cancel</Button>
+        <Button type="submit" form="assign-members-form" variant="contained">
+          Add Members
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

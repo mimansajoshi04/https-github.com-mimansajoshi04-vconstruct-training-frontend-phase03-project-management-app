@@ -1,10 +1,11 @@
-
 import type { UserType } from "../../database/model/user";
-import type {ProjectType} from "../../database/model/project";
+import type { ProjectType } from "../../database/model/project";
 
 export interface ProjectContextValue {
   projects: ProjectDataStructure | ProjectType[] | null;
-  setProjects: React.Dispatch<React.SetStateAction<ProjectDataStructure | ProjectType[] | null>>;
+  setProjects: React.Dispatch<
+    React.SetStateAction<ProjectDataStructure | ProjectType[] | null>
+  >;
 }
 
 export interface UserContextValue {

@@ -19,10 +19,10 @@ const schemaValues = {
     },
     "story": {
         "status": {
-            "pending": "pending",
+            "backlog": "backlog",
             "in_progress": "in_progress",
-            "completed": "completed",
-            "not_started": "not_started"
+            "testing": "testing",
+            "done": "done"
         },
         "priority": {
             "low": "low",

@@ -7,6 +7,8 @@ import type { UserContextType } from "../context/contexts/UserContext";
 
 import {useAuthCheck} from "../hooks/index"
 
+import KanbanBoard from "../common/story/KanbanBoard";
+
 export default function UserDashboard(): ReactNode {
   useAuthCheck({
     redirectTo: "/login",
@@ -19,6 +21,8 @@ export default function UserDashboard(): ReactNode {
     <>
       <h3>Welcome {user?.name}</h3>
       <p>Role: {user?.role}</p>
+
+      <KanbanBoard/>
     </>
   );
 }

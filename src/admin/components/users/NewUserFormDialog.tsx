@@ -132,7 +132,6 @@ export default function NewUserFormDialog({
                 name="role"
                 onChange={(e) => handleChange(e)}
               >
-                <MenuItem value="all">All</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
                 <MenuItem value="manager">Manager</MenuItem>
                 <MenuItem value="developer">Developer</MenuItem>

@@ -34,7 +34,7 @@ import { getAllDataForAdminUser } from "../../admin/services/getData";
 
 import { type UserType } from "../../../database/model/user";
 
-import {useAuthCheck} from "../../hooks/index"
+import { useAuthCheck } from "../../hooks/index";
 
 export default function NewProjectFormDialog({
   setAddProjectOpen,
@@ -67,7 +67,6 @@ export default function NewProjectFormDialog({
   });
 
   const [errorMessage, setErrorMessage] = useState("");
-
   const [open, setOpen] = React.useState(true);
 
   const handleClose = async () => {
@@ -228,14 +227,14 @@ export default function NewProjectFormDialog({
   );
 }
 
-function MultipleSelectCheckmarks({
+export function MultipleSelectCheckmarks({
   users,
   onChange,
 }: {
   users: UserType[];
   onChange?: (value: number[]) => void;
 }) {
-  const [memberIds, setMemberIds] = useState<any[]>([]);
+  const [memberIds, setMemberIds] = useState<number[]>([]);
 
   const handleChange = (event: any) => {
     const value = event.target.value;
@@ -245,6 +244,8 @@ function MultipleSelectCheckmarks({
       onChange(value);
     }
   };
+
+  const filteredUsers = users.filter((u) => u.role !== "admin");
 
   return (
     <FormControl fullWidth sx={{ marginTop: "0.5rem" }}>
@@ -263,7 +264,7 @@ function MultipleSelectCheckmarks({
             .join(", ")
         }
       >
-        {users.map((user) => {
+        {filteredUsers.map((user) => {
           const selected = memberIds.includes(user?.id ?? -1);
 
           return (
