@@ -1,8 +1,8 @@
 // External Libraries
-import { useContext, useState, useCallback, type ReactNode } from "react";
+import { useContext, useState, type ReactNode } from "react";
 
 // MUI Components
-import { TextField, Button, Box } from "@mui/material";
+import { Box, Typography, TextField, Button, Link } from "@mui/material";
 
 // import icons
 import EmailIcon from "@mui/icons-material/Email";
@@ -46,42 +46,50 @@ export default function Login(): ReactNode {
 
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleChange = useCallback((event: any) => {
+  const handleChange = (event: any) => {
     const { name, value } = event.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-  }, []);
+  };
 
-  const handleSubmit = useCallback(
-    async (event: any) => {
-      event.preventDefault();
+  const handleSubmit = async (event: any) => {
+    event.preventDefault();
 
-      const data = {
-        email: formData.email.trim(),
-        password: formData.password.trim(),
-      };
+    const data = {
+      email: formData.email.trim(),
+      password: formData.password.trim(),
+    };
 
-      try {
-        const response = await loginUser(data);
-        if (typeof response !== "string") {
-          localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response));
-          setUser(response);
-        }
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        setErrorMessage(message);
+    try {
+      const response = await loginUser(data);
+      if (typeof response !== "string") {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response));
+        setUser(response);
       }
-    },
-    [formData, setUser],
-  );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setErrorMessage(message);
+    }
+  };
 
   return (
-    <>
-      <header>
-        <h2>LOGIN</h2>
-      </header>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        bgcolor: "background.default",
+        px: 2,
+      }}
+    >
+      <Typography variant="h5" sx={{ mb: 4, fontWeight: 600 }}>
+        Login
+      </Typography>
+
       <Box
         component="form"
         onSubmit={handleSubmit}
@@ -89,13 +97,12 @@ export default function Login(): ReactNode {
           display: "flex",
           flexDirection: "column",
           gap: 3,
-          width: 350,
-          mx: "auto",
-          mt: 5,
-          p: 3,
-          border: "1px solid #ccc",
+          width: "100%",
+          maxWidth: 400,
+          p: 4,
           borderRadius: 2,
-          boxShadow: 2,
+          boxShadow: 3,
+          bgcolor: "background.paper",
         }}
       >
         {errorMessage && (
@@ -137,14 +144,16 @@ export default function Login(): ReactNode {
           />
         </Box>
 
-        <Button type="submit" variant="contained" size="large">
+        <Button type="submit" variant="contained" size="large" sx={{ mt: 1 }}>
           Login
         </Button>
 
-        <a style={{ textDecoration: "none" }} href={ROUTE_PATHS.REGISTER}>
-          Do not have an account? Register here
-        </a>
+        <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+          <Link href={ROUTE_PATHS.REGISTER} underline="hover">
+            Do not have an account? Register here
+          </Link>
+        </Typography>
       </Box>
-    </>
+    </Box>
   );
 }

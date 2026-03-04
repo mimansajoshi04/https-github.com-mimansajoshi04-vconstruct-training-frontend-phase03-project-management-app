@@ -1,12 +1,18 @@
 // External Libraries
-import { useState, useCallback, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 // MUI Components
-import { TextField, Button, Box } from "@mui/material";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Link,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
 
 // import icons
 import AccountCircle from "@mui/icons-material/AccountCircle";
@@ -52,15 +58,15 @@ export default function Register(): ReactNode {
 
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleChange = useCallback((event: any) => {
+  const handleChange = (event: any) => {
     const { name, value } = event.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-  }, []);
+  };
 
-  const validateForm = useCallback((): boolean => {
+  const validateForm = (): boolean => {
     const trimmedName = formData.name.trim();
     const trimmedPassword = formData.password.trim();
     const trimmedConfirmPassword = formData.confirmPassword.trim();
@@ -81,39 +87,47 @@ export default function Register(): ReactNode {
     }
 
     return true;
-  }, [formData]);
+  };
 
-  const handleSubmit = useCallback(
-    async (event: any) => {
-      event.preventDefault();
+  const handleSubmit = async (event: any) => {
+    event.preventDefault();
 
-      if (!validateForm()) {
-        return;
-      }
+    if (!validateForm()) {
+      return;
+    }
 
-      const data = {
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        role: formData.role,
-        password: formData.password.trim(),
-      };
+    const data = {
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      role: formData.role,
+      password: formData.password.trim(),
+    };
 
-      try {
-        await createUser(data);
-        window.location.href = ROUTE_PATHS.LOGIN;
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        setErrorMessage(message);
-      }
-    },
-    [formData, validateForm],
-  );
+    try {
+      await createUser(data);
+      window.location.href = ROUTE_PATHS.LOGIN;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setErrorMessage(message);
+    }
+  };
 
   return (
-    <>
-      <header>
-        <h2>REGISTER</h2>
-      </header>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        bgcolor: "background.default",
+        px: 2,
+      }}
+    >
+      <Typography variant="h5" sx={{ mb: 4, fontWeight: 600 }}>
+        Register
+      </Typography>
+
       <Box
         component="form"
         onSubmit={handleSubmit}
@@ -121,13 +135,12 @@ export default function Register(): ReactNode {
           display: "flex",
           flexDirection: "column",
           gap: 3,
-          width: 350,
-          mx: "auto",
-          mt: 5,
-          p: 3,
-          border: "1px solid #ccc",
+          width: "100%",
+          maxWidth: 400,
+          p: 4,
           borderRadius: 2,
-          boxShadow: 2,
+          boxShadow: 3,
+          bgcolor: "background.paper",
         }}
       >
         {errorMessage && (
@@ -174,7 +187,6 @@ export default function Register(): ReactNode {
           />
           <FormControl variant="standard" fullWidth required>
             <InputLabel id="role-label">Role</InputLabel>
-
             <Select
               labelId="role-label"
               id="role"
@@ -182,7 +194,6 @@ export default function Register(): ReactNode {
               value={formData.role}
               onChange={handleChange}
               displayEmpty
-              sx={{ textAlign: "left" }}
             >
               <MenuItem value={schemaValues.users.roles.developer}>
                 Developer
@@ -215,7 +226,7 @@ export default function Register(): ReactNode {
         <Box sx={{ display: "flex", alignItems: "flex-end" }}>
           <PasswordIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />
           <TextField
-            id="confirmPassword "
+            id="confirmPassword"
             type="password"
             label="Confirm Password"
             name="confirmPassword"
@@ -227,14 +238,16 @@ export default function Register(): ReactNode {
           />
         </Box>
 
-        <Button type="submit" variant="contained" size="large">
+        <Button type="submit" variant="contained" size="large" sx={{ mt: 1 }}>
           Register
         </Button>
 
-        <a style={{ textDecoration: "none" }} href={ROUTE_PATHS.LOGIN}>
-          Already have an account? Login here
-        </a>
+        <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+          <Link href={ROUTE_PATHS.LOGIN} underline="hover">
+            Already have an account? Login here
+          </Link>
+        </Typography>
       </Box>
-    </>
+    </Box>
   );
 }
