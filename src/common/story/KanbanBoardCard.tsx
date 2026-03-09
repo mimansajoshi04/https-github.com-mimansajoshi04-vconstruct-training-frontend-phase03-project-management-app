@@ -245,6 +245,7 @@ export default function KanbanBoardCard({
                 )}
 
                 {!isDashboard &&
+                  user &&
                   (user?.id === assignedBy.id ||
                     user?.id === assignedTo.id) && (
                     <Stack

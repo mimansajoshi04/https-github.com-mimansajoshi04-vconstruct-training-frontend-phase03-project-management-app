@@ -24,17 +24,15 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 import { useState } from "react";
 
-import DBContext from "../../context/contexts/DBContext";
 import { createProject } from "../../../database/model/project";
-import { getAllDataForUser } from "../../user/services/getData";
 import { UserContext } from "../../context/contexts/UserContext";
 import { AllUserContext } from "../../context/contexts/AppContext";
 import { createProjectUserRelation } from "../../../database/model/assignment";
-import { getAllDataForAdminUser } from "../../admin/services/getData";
 
 import { type UserType } from "../../../database/model/user";
 
 import { useAuthCheck } from "../../hooks/index";
+import {getAllData} from "../../services/getData";
 
 export default function NewProjectFormDialog({
   setAddProjectOpen,
@@ -47,7 +45,6 @@ export default function NewProjectFormDialog({
     redirectTo: "/login",
     when: "unauthenticated",
   });
-  const db = React.useContext(DBContext);
   const { user } = React.useContext(UserContext);
 
   const { users } = React.useContext(AllUserContext);
@@ -71,15 +68,10 @@ export default function NewProjectFormDialog({
 
   const handleClose = async () => {
     try {
-      if (!db || !user) return;
-
-      let data;
-      if (user?.role !== "admin") {
-        data = await getAllDataForUser(db, user?.id ?? -1);
-      } else {
-        data = await getAllDataForAdminUser(db);
+      if (user) {
+        let data = await getAllData(user);
+        setProjects(data.projectData || {});
       }
-      setProjects(data.projectData || {});
     } catch (error: any) {
       setErrorMessage(error);
       return;
@@ -116,11 +108,9 @@ export default function NewProjectFormDialog({
     let date = Date.now();
 
     try {
-      if (!db) return;
-
       if (!(user?.id ?? -1 === -1)) return;
 
-      const response = await createProject(db, {
+      const response = await createProject({
         name: formData.name.trim(),
         description: formData.description.trim(),
         created_by: user?.id ?? -1,
@@ -135,7 +125,7 @@ export default function NewProjectFormDialog({
       const proj_id = response.id;
 
       formData.members.forEach(async (memberId) => {
-        await createProjectUserRelation(db, {
+        await createProjectUserRelation({
           projectId: Number(proj_id),
           userId: Number(memberId),
           assignedAt: new Date(date),

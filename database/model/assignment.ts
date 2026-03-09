@@ -1,4 +1,5 @@
 import { getUserById, type UserType } from "./user";
+import dbSchema from "../schema/schema";
 
 interface ProjectUserRelation {
   id?: number;
@@ -20,190 +21,304 @@ interface ProjectForUserType {
 }
 
 const createProjectUserRelation = (
-  db: IDBDatabase,
   relation: ProjectUserRelation,
 ): Promise<string> => {
-  // logic to create a project-user relation in the database
   return new Promise((resolve, reject) => {
-    const TRANSACTION = db.transaction("project_user_relation", "readwrite");
-    const STORE = TRANSACTION.objectStore("project_user_relation");
-    const INDEX = STORE.index("id");
-    const GET_REQUEST = INDEX.getAll();
+    const REQUEST = indexedDB.open(
+      dbSchema.name ?? "project-management-app",
+      dbSchema.version ?? 1,
+    );
 
-    GET_REQUEST.onsuccess = () => {
-      let result = GET_REQUEST.result;
-      let existingRelation = result.filter(
-        (r) => r.userId == relation.userId && r.projectId == relation.projectId,
-      );
+    REQUEST.onsuccess = () => {
+      const DB = REQUEST.result;
 
-      if (existingRelation.length > 0) {
-        reject("Cannot create a new relation!");
+      if (!DB) {
+        reject("DB Not found!");
         return;
       }
+      const TRANSACTION = DB.transaction("project_user_relation", "readwrite");
+      const STORE = TRANSACTION.objectStore("project_user_relation");
+      const INDEX = STORE.index("id");
+      const GET_REQUEST = INDEX.getAll();
 
-      const REQUEST = STORE.add(relation);
+      GET_REQUEST.onsuccess = () => {
+        let result = GET_REQUEST.result;
+        let existingRelation = result.filter(
+          (r) =>
+            r.userId == relation.userId && r.projectId == relation.projectId,
+        );
 
-      REQUEST.onsuccess = () => {
-        resolve("Project-user relation created successfully");
+        if (existingRelation.length > 0) {
+          reject("Cannot create a new relation!");
+          return;
+        }
+
+        const ADD_REQUEST = STORE.add(relation);
+
+        ADD_REQUEST.onsuccess = () => {
+          resolve("Project-user relation created successfully");
+        };
+
+        ADD_REQUEST.onerror = (error: unknown) => {
+          if (error instanceof Error) {
+            reject(error.message);
+            return;
+          }
+
+          if (typeof error === "string") {
+            reject(error);
+            return;
+          }
+        };
       };
 
-      REQUEST.onerror = (event) => {
-        console.error("Error creating project-user relation:", event);
-        reject(event);
+      GET_REQUEST.onerror = (error: unknown) => {
+        if (error instanceof Error) {
+          reject(error.message);
+          return;
+        }
+
+        if (typeof error === "string") {
+          reject(error);
+          return;
+        }
       };
     };
 
-    GET_REQUEST.onerror = (error:any) =>{
-      let message = error instanceof Error ? error.message : error;
-      reject(message);
-    }
+    REQUEST.onerror = (error: unknown) => {
+      if (error instanceof Error) {
+        reject(error.message);
+        return;
+      }
+
+      if (typeof error === "string") {
+        reject(error);
+        return;
+      }
+    };
   });
 };
 
-const getUsersForProject = (
-  db: IDBDatabase,
-  projectId: number,
-): Promise<UserType[]> => {
+const getUsersForProject = (projectId: number): Promise<UserType[]> => {
   // logic to get all users assigned to a specific project
   return new Promise((resolve, reject) => {
-    const TRANSACTION = db.transaction("project_user_relation", "readonly");
-    const STORE = TRANSACTION.objectStore("project_user_relation");
-    const INDEX = STORE.index("id");
-    const REQUEST = INDEX.getAll();
+    const REQUEST = indexedDB.open(
+      dbSchema.name ?? "project-management-app",
+      dbSchema.version ?? 1,
+    );
 
     REQUEST.onsuccess = () => {
-      const RESULT = REQUEST.result;
-      const DATA = RESULT.filter((p) => p.projectId == projectId);
+      const DB = REQUEST.result;
+      const TRANSACTION = DB.transaction("project_user_relation", "readonly");
+      const STORE = TRANSACTION.objectStore("project_user_relation");
+      const INDEX = STORE.index("id");
+      const GET_REQUEST = INDEX.getAll();
 
-      let totalMembers = DATA.length;
-      let members: UserType[] = [];
-      let completed = 0;
+      GET_REQUEST.onsuccess = () => {
+        const RESULT = GET_REQUEST.result;
+        const DATA = RESULT.filter((p) => p.projectId == projectId);
 
-      DATA.forEach(async (relation) => {
-        let userId = relation.userId;
-        try {
-          let member = await getUserById(db, userId);
-          if (typeof member !== "string")
-            members.push({
-              ...member,
-              id: userId,
-            });
-          completed++;
+        let totalMembers = DATA.length;
+        let members: UserType[] = [];
+        let completed = 0;
 
-          if (completed == totalMembers) {
-            resolve(members);
+        DATA.forEach(async (relation) => {
+          let userId = relation.userId;
+          try {
+            let member = await getUserById(userId);
+            if (typeof member !== "string")
+              members.push({
+                ...member,
+                id: userId,
+              });
+            completed++;
+
+            if (completed == totalMembers) {
+              resolve(members);
+            }
+          } catch (error) {
+            console.error(error);
+            completed++;
+
+            if (completed == totalMembers) {
+              resolve(members);
+            }
           }
-        } catch (error) {
-          console.error(error);
-          completed++;
+        });
+      };
 
-          if (completed == totalMembers) {
-            resolve(members);
-          }
+      GET_REQUEST.onerror = (error: unknown) => {
+        if (error instanceof Error) {
+          reject(error.message);
+          return;
         }
-      });
+
+        if (typeof error === "string") {
+          reject(error);
+          return;
+        }
+      };
     };
 
-    REQUEST.onerror = (event) => {
-      console.error("Error getting users for project:", event);
-      reject(null);
+    REQUEST.onerror = (error: unknown) => {
+      if (error instanceof Error) {
+        reject(error.message);
+        return;
+      }
+
+      if (typeof error === "string") {
+        reject(error);
+        return;
+      }
     };
   });
 };
 
-const getProjectsForUser = (
-  db: IDBDatabase,
-  userId: number,
-): Promise<ProjectForUserType[]> => {
+const getProjectsForUser = (userId: number): Promise<ProjectForUserType[]> => {
   return new Promise((resolve, reject) => {
-    const TRANSACTION = db.transaction("project_user_relation", "readonly");
-    const STORE = TRANSACTION.objectStore("project_user_relation");
-    const REQUEST = STORE.getAll();
+    const DB_REQUEST = indexedDB.open(
+      dbSchema.name ?? "project-management-app",
+      dbSchema.version ?? 1,
+    );
 
-    REQUEST.onsuccess = () => {
-      let userProjects = REQUEST.result.filter(
-        (proj) => proj.userId === userId,
-      );
+    DB_REQUEST.onsuccess = () => {
+      const DB = DB_REQUEST.result;
 
-      if (userProjects.length === 0) {
-        resolve([]);
+      const TRANSACTION = DB.transaction("project_user_relation", "readonly");
+      const STORE = TRANSACTION.objectStore("project_user_relation");
+      const REQUEST = STORE.getAll();
+
+      REQUEST.onsuccess = () => {
+        let userProjects = REQUEST.result.filter(
+          (proj) => proj.userId === userId,
+        );
+
+        if (userProjects.length === 0) {
+          resolve([]);
+          return;
+        }
+
+        const PROJECT_TX = DB.transaction("projects", "readonly");
+        const PROJECT_STR = PROJECT_TX.objectStore("projects");
+
+        const projectDetails: ProjectForUserType[] = [];
+        let completed = 0;
+
+        userProjects.forEach((project) => {
+          const REQUEST_PROJ = PROJECT_STR.get(project.projectId);
+
+          REQUEST_PROJ.onsuccess = () => {
+            if (REQUEST_PROJ.result) {
+              projectDetails.push({
+                ...REQUEST_PROJ.result,
+                assignedAt: project.assignedAt,
+              });
+            }
+
+            completed++;
+
+            if (completed === userProjects.length) {
+              resolve(projectDetails);
+            }
+          };
+
+          REQUEST_PROJ.onerror = () => {
+            completed++;
+
+            if (completed === userProjects.length) {
+              resolve(projectDetails);
+            }
+          };
+        });
+      };
+
+      REQUEST.onerror = (error: unknown) => {
+        if (error instanceof Error) {
+          reject(error.message);
+          return;
+        }
+
+        if (typeof error === "string") {
+          reject(error);
+          return;
+        }
+      };
+    };
+
+    DB_REQUEST.onerror = (error: unknown) => {
+      if (error instanceof Error) {
+        reject(error.message);
         return;
       }
 
-      const PROJECT_TX = db.transaction("projects", "readonly");
-      const PROJECT_STR = PROJECT_TX.objectStore("projects");
-
-      const projectDetails: ProjectForUserType[] = [];
-      let completed = 0;
-
-      userProjects.forEach((project) => {
-        const REQUEST_PROJ = PROJECT_STR.get(project.projectId);
-
-        REQUEST_PROJ.onsuccess = () => {
-          if (REQUEST_PROJ.result) {
-            projectDetails.push({
-              ...REQUEST_PROJ.result,
-              assignedAt: project.assignedAt,
-            });
-          }
-
-          completed++;
-
-          if (completed === userProjects.length) {
-            resolve(projectDetails);
-          }
-        };
-
-        REQUEST_PROJ.onerror = () => {
-          completed++;
-
-          if (completed === userProjects.length) {
-            resolve(projectDetails);
-          }
-        };
-      });
-    };
-
-    REQUEST.onerror = () => {
-      reject(new Error("Error getting projects for user"));
+      if (typeof error === "string") {
+        reject(error);
+        return;
+      }
     };
   });
 };
 
 const removeUserFromProject = (
-  db: IDBDatabase,
   projectId: number,
   userId: number,
 ): Promise<string> => {
   // logic to remove a user from a project
   return new Promise((resolve, reject) => {
-    const TRANSACTION = db.transaction("project_user_relation", "readwrite");
-    const STORE = TRANSACTION.objectStore("project_user_relation");
-    const INDEX = STORE.index("project_id");
-    const REQUEST = INDEX.getAll(projectId);
+    const DB_REQUEST = indexedDB.open(
+      dbSchema.name ?? "project-management-app",
+      dbSchema.version ?? 1,
+    );
 
-    REQUEST.onsuccess = () => {
-      let relations = REQUEST.result as ProjectUserRelation[];
-      let relationToRemove = relations.find(
-        (relation) => relation.userId === userId,
-      );
-      if (relationToRemove) {
-        const DELETE_REQUEST = STORE.delete(relationToRemove.projectId);
-        DELETE_REQUEST.onsuccess = () => {
-          resolve("User removed from project successfully");
-        };
-        DELETE_REQUEST.onerror = (event) => {
-          console.error("Error removing user from project:", event);
-          reject("Error removing user from project");
-        };
-      } else {
-        reject("User not found in project");
-      }
+    DB_REQUEST.onsuccess = () => {
+      const DB = DB_REQUEST.result;
+      const TRANSACTION = DB.transaction("project_user_relation", "readwrite");
+      const STORE = TRANSACTION.objectStore("project_user_relation");
+      const INDEX = STORE.index("project_id");
+      const REQUEST = INDEX.getAll(projectId);
+
+      REQUEST.onsuccess = () => {
+        let relations = REQUEST.result as ProjectUserRelation[];
+        let relationToRemove = relations.find(
+          (relation) => relation.userId === userId,
+        );
+        if (relationToRemove) {
+          const DELETE_REQUEST = STORE.delete(relationToRemove.projectId);
+          DELETE_REQUEST.onsuccess = () => {
+            resolve("User removed from project successfully");
+          };
+          DELETE_REQUEST.onerror = (error: unknown) => {
+            if (error instanceof Error) {
+              reject(error.message);
+              return;
+            }
+
+            if (typeof error === "string") {
+              reject(error);
+              return;
+            }
+          };
+        } else {
+          reject("User not found in project");
+        }
+      };
+
+      REQUEST.onerror = (error: unknown) => {
+        if (error instanceof Error) {
+          reject(error.message);
+          return;
+        }
+
+        if (typeof error === "string") {
+          reject(error);
+          return;
+        }
+      };
     };
 
-    REQUEST.onerror = (event) => {
-      console.error("Error finding user in project:", event);
-      reject("Error finding user in project");
+    DB_REQUEST.onerror = (error: any) => {
+      let message = error instanceof Error ? error.message : error;
+      reject(message);
     };
   });
 };

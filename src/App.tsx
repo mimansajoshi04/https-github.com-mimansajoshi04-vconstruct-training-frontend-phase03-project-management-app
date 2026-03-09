@@ -23,8 +23,10 @@ import AdminProjects from "./admin/components/projects/AdminProjects";
 import UserProjects from "./user/UserProjects";
 import ProjectDetails from "./common/projects/ProjectDetails";
 import KanbanBoard from "./common/story/KanbanBoard";
+import { useInitializeDB } from "./hooks";
 
 function App(): React.ReactElement {
+  useInitializeDB();
   useAuthInitialize();
 
   const { user }: UserContextType = useContext(UserContext);

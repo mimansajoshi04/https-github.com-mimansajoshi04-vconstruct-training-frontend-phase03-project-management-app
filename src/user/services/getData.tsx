@@ -2,15 +2,15 @@
 import { getAllUsers } from "../../../database/model/user";
 import { getProjectsByUserId } from "../../../database/model/project";
 
-const getAllDataForUser = (db: IDBDatabase, id:number): Promise<any> => {
+const getAllDataForUser = (id:number): Promise<any> => {
   return new Promise(async (resolve, reject) => {
     let userData;
     let projectData;
 
     try {
-      userData = await getAllUsers(db);
+      userData = await getAllUsers();
       if (userData) {
-        projectData = await getProjectsByUserId(db,id);
+        projectData = await getProjectsByUserId(id);
         if (projectData) {
           resolve({
             userData: userData,
@@ -24,7 +24,7 @@ const getAllDataForUser = (db: IDBDatabase, id:number): Promise<any> => {
         }
       } else {
         console.log("in else")
-        projectData = await getProjectsByUserId(db,id);
+        projectData = await getProjectsByUserId(id);
         if (projectData) {
           resolve({
             userData: {},

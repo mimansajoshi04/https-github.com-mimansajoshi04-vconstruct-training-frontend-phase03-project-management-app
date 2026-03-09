@@ -204,11 +204,9 @@ export default function ProjectMembers({
 
 import { MultipleSelectCheckmarks } from "./NewProjectFormDialog";
 
-import DBContext from "../../context/contexts/DBContext";
 import { createProjectUserRelation } from "../../../database/model/assignment";
-import { getAllDataForAdminUser } from "../../admin/services/getData";
-import { getAllDataForUser } from "../../user/services/getData";
 import { UserContext } from "../../context/contexts/UserContext";
+import { getAllData } from "../../services/getData";
 
 export function AssignNewMembers({
   setAssignMembersOpen,
@@ -221,7 +219,6 @@ export function AssignNewMembers({
   projectId: number;
   setProjects: Function;
 }) {
-  const db = useContext(DBContext);
   const { user } = useContext(UserContext);
   const { users } = useContext(AllUserContext);
 
@@ -248,28 +245,22 @@ export function AssignNewMembers({
     event.preventDefault();
 
     try {
-      if (!db) return;
-
       const date = new Date();
 
       const newMembers = members.filter((id) => !memberIds.includes(id));
 
       for (const memberId of newMembers) {
-        await createProjectUserRelation(db, {
+        await createProjectUserRelation({
           projectId: Number(projectId),
           userId: Number(memberId),
           assignedAt: date,
         });
       }
 
-      let data;
-      if (user?.role !== "admin") {
-        data = await getAllDataForUser(db, user?.id ?? -1);
-      } else {
-        data = await getAllDataForAdminUser(db);
+      if (user) {
+        let data = await getAllData(user);
+        setProjects(data.projectData || {});
       }
-
-      setProjects(data.projectData || {});
       handleClose();
     } catch (error) {
       setErrorMessage("Failed to assign members.");

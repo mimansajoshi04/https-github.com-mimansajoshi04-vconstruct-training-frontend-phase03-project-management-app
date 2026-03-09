@@ -15,7 +15,6 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 import { useState } from "react";
 
-import DBContext from "../../context/contexts/DBContext";
 import {
   updateProject,
   type ProjectType,
@@ -38,7 +37,7 @@ export default function EditProjectFormDialog({
     redirectTo: "/login",
     when: "unauthenticated",
   });
-  const db = React.useContext(DBContext);
+
   const { projects, setProjects } = React.useContext(AllProjectContext);
 
   const navigate = useNavigate();
@@ -96,10 +95,7 @@ export default function EditProjectFormDialog({
         deadline_date: deadline,
       };
 
-      if (!db) return;
-
       const response: string | ProjectType = await updateProject(
-        db,
         project?.id ?? -1,
         updatedData,
       );

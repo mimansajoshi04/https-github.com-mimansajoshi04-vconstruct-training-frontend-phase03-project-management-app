@@ -9,19 +9,18 @@ import {
   Typography,
 } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, type ReactNode } from "react";
 import { useMemo, useCallback } from "react";
 
 import {
   getStoryForProjectId,
   type StoryType,
-  getStoryForUserId
+  getStoryForUserId,
 } from "../../../database/model/story";
 
 import type { UserType } from "../../../database/model/user";
 
 import { getUsersForProject } from "../../../database/model/assignment";
-import DBContext from "../../context/contexts/DBContext";
 
 import KanbanBoardCard from "./KanbanBoardCard";
 import NewStoryFormDialog from "./NewStoryFormDialog";
@@ -30,7 +29,7 @@ import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import { UserContext } from "../../context/contexts/UserContext";
 
-export default function KanbanBoard() {
+export default function KanbanBoard(): ReactNode {
   const { type, id } = useParams();
   const navigate = useNavigate();
 
@@ -40,7 +39,6 @@ export default function KanbanBoard() {
 
   let projectId = Number(id);
 
-  const db = useContext(DBContext);
   const { user } = useContext(UserContext);
   let currentUserId = String(user?.id ?? "");
 
@@ -48,6 +46,7 @@ export default function KanbanBoard() {
   const [userId, setUserId] = useState<string>("all");
   const [priority, setPriority] = useState<string>("all");
   const [members, setMembers] = useState<UserType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [newStoryOpen, setNewStoryOpen] = useState<boolean>(false);
 
@@ -67,8 +66,7 @@ export default function KanbanBoard() {
 
     async function fetchMembers() {
       try {
-        if (!db) return;
-        const response = await getUsersForProject(db, Number(id) ?? -1);
+        const response = await getUsersForProject(Number(id) ?? -1);
         setMembers(response.filter((m) => m.id != user?.id) || []);
       } catch (error) {
         console.error(error);
@@ -88,12 +86,21 @@ export default function KanbanBoard() {
       }
     };
 
-    if (isDashboard) {
-      loadStoriesForUser();
-    } else {
-      fetchMembers();
-      loadStories();
-    }
+    const init = async () => {
+      try {
+        if (isDashboard) {
+          await loadStoriesForUser();
+        } else {
+          await Promise.all([fetchMembers(), loadStories()]);
+        }
+      } catch (error) {
+        //handle error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    init();
   }, []);
 
   const filteredStoriesByStatus = useCallback(
@@ -129,6 +136,10 @@ export default function KanbanBoard() {
     [filteredStoriesByStatus],
   );
 
+  if (isLoading) {
+    return <h3>Loading...</h3>;
+  }
+
   return (
     <Box>
       {!isDashboard && newStoryOpen && (
@@ -140,48 +151,52 @@ export default function KanbanBoard() {
       )}
 
       <Box>
-        {!isDashboard && <Stack sx={{ justifyContent: "space-between" }} direction="row">
-          <Button
-            variant="outlined"
-            startIcon={<ArrowBackRoundedIcon />}
-            onClick={() => {
-              navigate(`/dashboard/projects/${type}/${id}`);
-            }}
-          >
-            BACK TO PROJECT PAGE
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<AddRoundedIcon />}
-            onClick={() => {
-              setNewStoryOpen(true);
-            }}
-          >
-            NEW STORY
-          </Button>
-        </Stack>}
-        <Stack sx={{ mt: 3 }} direction="row" gap={3}>
-         {!isDashboard &&  <FormControl fullWidth>
-            <InputLabel id="user-id-select-label">User</InputLabel>
-            <Select
-              labelId="user-id-select-label"
-              value={userId}
-              label="User"
-              onChange={(e) => setUserId(e.target.value)}
+        {!isDashboard && (
+          <Stack sx={{ justifyContent: "space-between" }} direction="row">
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBackRoundedIcon />}
+              onClick={() => {
+                navigate(`/dashboard/projects/${type}/${id}`);
+              }}
             >
-              <MenuItem value="all">All</MenuItem>
-              {user?.role !== "admin" && (
-                <MenuItem value={currentUserId}>Self</MenuItem>
-              )}
-              {members.map((m) => {
-                return (
-                  <MenuItem key={m.id} value={String(m.id)}>
-                    {m.name}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>}
+              BACK TO PROJECT PAGE
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<AddRoundedIcon />}
+              onClick={() => {
+                setNewStoryOpen(true);
+              }}
+            >
+              NEW STORY
+            </Button>
+          </Stack>
+        )}
+        <Stack sx={{ mt: 3 }} direction="row" gap={3}>
+          {!isDashboard && (
+            <FormControl fullWidth>
+              <InputLabel id="user-id-select-label">User</InputLabel>
+              <Select
+                labelId="user-id-select-label"
+                value={userId}
+                label="User"
+                onChange={(e) => setUserId(e.target.value)}
+              >
+                <MenuItem value="all">All</MenuItem>
+                {user?.role !== "admin" && (
+                  <MenuItem value={currentUserId}>Self</MenuItem>
+                )}
+                {members.map((m) => {
+                  return (
+                    <MenuItem key={m.id} value={String(m.id)}>
+                      {m.name}
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
+          )}
 
           <FormControl fullWidth>
             <InputLabel id="priority-id-select-label">Priority</InputLabel>

@@ -22,27 +22,25 @@ const createUser = ({
       dbSchema?.version ?? 1,
     );
 
-    REQUEST.onsuccess = async (event: any) => {
-      const DB = event?.target?.result ?? null;
+    REQUEST.onsuccess = async () => {
+      const DB = REQUEST.result;
       if (!DB) {
         reject("Failed to open database.");
         return;
       }
 
       // create a new transaction to  add the user to the object store
-      const TRANSACTION = await DB.transaction(
+      const TRANSACTION = DB.transaction(
         dbSchema.objectStores[0].name,
         "readwrite",
       );
 
       // get the object store and add the user
-      const STORE = TRANSACTION.objectStore(
-        dbSchema.objectStores[0].name,
-      );
+      const STORE = TRANSACTION.objectStore(dbSchema.objectStores[0].name);
 
       // index for email to check if a user with the same email already exists
-      const EMAIL_INDEX = await STORE.index("email");
-      const EMAIL_QUERY = await EMAIL_INDEX.get(email);
+      const EMAIL_INDEX = STORE.index("email");
+      const EMAIL_QUERY = EMAIL_INDEX.get(email);
 
       EMAIL_QUERY.onsuccess = async () => {
         if (EMAIL_QUERY.result) {
@@ -67,143 +65,276 @@ const createUser = ({
               avatar_color: avatar_color,
             });
           };
-          ADD_REQUEST.onerror = (event: any) => {
-            reject(event?.target?.error ?? "Unknown error");
+          ADD_REQUEST.onerror = (error: unknown) => {
+            if (error instanceof Error) {
+              reject(error.message);
+              return;
+            }
+
+            if (typeof error === "string") {
+              reject(error);
+              return;
+            }
           };
         }
       };
 
-      EMAIL_QUERY.onerror = (event: any) => {
-        reject(event?.target?.error ?? "Unknown error");
+      EMAIL_QUERY.onerror = (error: unknown) => {
+        if (error instanceof Error) {
+          reject(error.message);
+          return;
+        }
+
+        if (typeof error === "string") {
+          reject(error);
+          return;
+        }
       };
     };
 
-    REQUEST.onerror = (event: any) => {
-      reject(event?.target?.error ?? "Unknown error");
+    REQUEST.onerror = (error: unknown) => {
+      if (error instanceof Error) {
+        reject(error.message);
+        return;
+      }
+
+      if (typeof error === "string") {
+        reject(error);
+        return;
+      }
     };
   });
 };
 
-const getAllUsers = (DB: IDBDatabase): Promise<UserType[]> => {
+const getAllUsers = (): Promise<UserType[]> => {
   return new Promise(async (resolve, reject) => {
-    const TRANSACTION = await DB.transaction(
-      dbSchema.objectStores[0].name,
-      "readonly",
+    const DB_REQUEST = indexedDB.open(
+      dbSchema.name ?? "project-management-app",
+      dbSchema.version ?? 1,
     );
-    const STORE = TRANSACTION.objectStore(dbSchema.objectStores[0].name);
-    const REQUEST = STORE.getAll();
-    REQUEST.onsuccess = () => {
-      let result = REQUEST.result;
-      let users:UserType[] = [];
 
-      result.forEach((user) => {
-        users.push({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          avatar_color: user.avatar_color,
+    DB_REQUEST.onsuccess = () => {
+      const DB = DB_REQUEST.result;
+      const TRANSACTION = DB.transaction(
+        dbSchema.objectStores[0].name,
+        "readonly",
+      );
+      const STORE = TRANSACTION.objectStore(dbSchema.objectStores[0].name);
+      const REQUEST = STORE.getAll();
+      REQUEST.onsuccess = () => {
+        let result = REQUEST.result;
+        let users: UserType[] = [];
+
+        result.forEach((user) => {
+          users.push({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            avatar_color: user.avatar_color,
+          });
         });
-      });
-      resolve(users);
+        resolve(users);
+      };
+      REQUEST.onerror = (error: unknown) => {
+        if (error instanceof Error) {
+          reject(error.message);
+          return;
+        }
+
+        if (typeof error === "string") {
+          reject(error);
+          return;
+        }
+      };
     };
-    REQUEST.onerror = (event: any) => {
-      reject(event?.target?.error ?? "Unknown error");
+
+    DB_REQUEST.onerror = (error: unknown) => {
+      if (error instanceof Error) {
+        reject(error.message);
+        return;
+      }
+
+      if (typeof error === "string") {
+        reject(error);
+        return;
+      }
     };
   });
 };
 
-const getUserByEmail = (
-  DB: IDBDatabase,
-  email: string,
-): Promise<UserType | string> => {
+const getUserByEmail = (email: string): Promise<UserType | string> => {
   return new Promise(async (resolve, reject) => {
-    const TRANSACTION = await DB.transaction(
-      dbSchema.objectStores[0].name,
-      "readonly",
+    const DB_REQUEST = indexedDB.open(
+      dbSchema.name ?? "project-management-app",
+      dbSchema.version ?? 1,
     );
-    const STORE = TRANSACTION.objectStore(dbSchema.objectStores[0].name);
-    const EMAIL_INDEX =  STORE.index("email");
-    const EMAIL_QUERY = EMAIL_INDEX.get(email);
 
-    EMAIL_QUERY.onsuccess = () => {
-      let result = EMAIL_QUERY.result;
-      resolve(result);
+    DB_REQUEST.onsuccess = () => {
+      const DB = DB_REQUEST.result;
+      const TRANSACTION = DB.transaction(
+        dbSchema.objectStores[0].name,
+        "readonly",
+      );
+      const STORE = TRANSACTION.objectStore(dbSchema.objectStores[0].name);
+      const EMAIL_INDEX = STORE.index("email");
+      const EMAIL_QUERY = EMAIL_INDEX.get(email);
+
+      EMAIL_QUERY.onsuccess = () => {
+        let result = EMAIL_QUERY.result;
+        resolve(result);
+      };
+      EMAIL_QUERY.onerror = (error: unknown) => {
+        if (error instanceof Error) {
+          reject(error.message);
+          return;
+        }
+
+        if (typeof error === "string") {
+          reject(error);
+          return;
+        }
+      };
     };
-    EMAIL_QUERY.onerror = (event: any) => {
-      reject(event?.target?.error ?? "Unknown error");
+
+    DB_REQUEST.onerror = (error: unknown) => {
+      if (error instanceof Error) {
+        reject(error.message);
+        return;
+      }
+
+      if (typeof error === "string") {
+        reject(error);
+        return;
+      }
     };
   });
 };
 
-const getUserById = (DB: IDBDatabase, id: number): Promise<UserType|string> => {
+const getUserById = (id: number): Promise<UserType | string> => {
   return new Promise(async (resolve, reject) => {
-    const TRANSACTION = DB.transaction(
-      dbSchema.objectStores[0].name,
-      "readonly",
+    const DB_REQUEST = indexedDB.open(
+      dbSchema.name ?? "project-management-app",
+      dbSchema.version ?? 1,
     );
-    const STORE = TRANSACTION.objectStore(dbSchema.objectStores[0].name);
-    const REQUEST = STORE.get(id);
 
-    REQUEST.onsuccess = () => {
-      let result = REQUEST.result;
-      resolve({
-        name: result.name,
-        role: result.role,
-        avatar_color: result.avatar_color,
-        email: result.email,
-      });
+    DB_REQUEST.onsuccess = () => {
+      const DB = DB_REQUEST.result;
+      const TRANSACTION = DB.transaction(
+        dbSchema.objectStores[0].name,
+        "readonly",
+      );
+      const STORE = TRANSACTION.objectStore(dbSchema.objectStores[0].name);
+      const REQUEST = STORE.get(id);
+
+      REQUEST.onsuccess = () => {
+        let result = REQUEST.result;
+        resolve({
+          name: result.name,
+          role: result.role,
+          avatar_color: result.avatar_color,
+          email: result.email,
+        });
+      };
+      REQUEST.onerror = (error: unknown) => {
+        if (error instanceof Error) {
+          reject(error.message);
+          return;
+        }
+
+        if (typeof error === "string") {
+          reject(error);
+          return;
+        }
+      };
     };
-    REQUEST.onerror = (event: any) => {
-      reject(event?.target?.error ?? "Unknown error");
+
+    DB_REQUEST.onerror = (error: unknown) => {
+      if (error instanceof Error) {
+        reject(error.message);
+        return;
+      }
+
+      if (typeof error === "string") {
+        reject(error);
+        return;
+      }
     };
   });
 };
 
-const deleteUserById = (DB: IDBDatabase, id: number): Promise<string> => {
+const deleteUserById = (id: number): Promise<string> => {
   return new Promise(async (resolve, reject) => {
-    const TRANSACTION = DB.transaction(
-      dbSchema.objectStores[0].name,
-      "readwrite",
+    const DB_REQUEST = indexedDB.open(
+      dbSchema.name ?? "project-management-app",
+      dbSchema.version ?? 1,
     );
-    const STORE = TRANSACTION.objectStore(dbSchema.objectStores[0].name);
+
+    DB_REQUEST.onsuccess = async () => {
+      const DB = DB_REQUEST.result;
+      const TRANSACTION = DB.transaction(
+        dbSchema.objectStores[0].name,
+        "readwrite",
+      );
+      const STORE = TRANSACTION.objectStore(dbSchema.objectStores[0].name);
+      try {
+        let user = await getUserById(id);
+        if (!user || typeof user === "string") {
+          reject("User not found.");
+          return;
+        }
+
+        if (user?.role === "admin") {
+          reject("Cannot delete an admin user.");
+          return;
+        }
+      } catch (error) {
+        reject("Error fetching user before deletion.");
+        return;
+      }
+
+      const DELETE_REQUEST = STORE.delete(id);
+
+      DELETE_REQUEST.onsuccess = () => {
+        resolve("User deleted successfully.");
+      };
+      DELETE_REQUEST.onerror = (error: unknown) => {
+        if (error instanceof Error) {
+          reject(error.message);
+          return;
+        }
+
+        if (typeof error === "string") {
+          reject(error);
+          return;
+        }
+      };
+    };
+
+    DB_REQUEST.onerror = (error: unknown) => {
+      if (error instanceof Error) {
+        reject(error.message);
+        return;
+      }
+
+      if (typeof error === "string") {
+        reject(error);
+        return;
+      }
+    };
+  });
+};
+
+const deleteUserByEmail = (email: string) => {
+  return new Promise(async (resolve, reject) => {
     try {
-      let user = await getUserById(DB, id);
-      if (!user || typeof user ==="string") {
+      let user = await getUserByEmail(email);
+      if (!user || typeof user === "string") {
         reject("User not found.");
         return;
       }
 
-      if (user?.role === "admin") {
-        reject("Cannot delete an admin user.");
-        return;
-      }
-    } catch (error) {
-      reject("Error fetching user before deletion.");
-      return;
-    }
-
-    const DELETE_REQUEST = STORE.delete(id);
-
-    DELETE_REQUEST.onsuccess = () => {
-      resolve("User deleted successfully.");
-    };
-    DELETE_REQUEST.onerror = (event: any) => {
-      reject(event?.target?.error ?? "Unknown error");
-    };
-  });
-};
-
-const deleteUserByEmail = (DB: IDBDatabase, email: string) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      let user = await getUserByEmail(DB, email);
-      if (!user || typeof user ==="string") {
-        reject("User not found.");
-        return;
-      }
-
-      await deleteUserById(DB, user?.id ?? -1);
+      await deleteUserById(user?.id ?? -1);
       resolve("User deleted successfully.");
     } catch (error) {
       reject(error);
@@ -212,35 +343,62 @@ const deleteUserByEmail = (DB: IDBDatabase, email: string) => {
 };
 
 const updateUserById = (
-  DB: IDBDatabase,
   id: number,
   updatedData: Partial<UserType>,
-) : Promise<UserType | string> => {
+): Promise<UserType | string> => {
   return new Promise(async (resolve, reject) => {
-    const TRANSACTION = DB.transaction(
-      dbSchema.objectStores[0].name,
-      "readwrite",
+    const DB_REQUEST = indexedDB.open(
+      dbSchema.name ?? "project-management-app",
+      dbSchema.version ?? 1,
     );
-    const STORE = TRANSACTION.objectStore(dbSchema.objectStores[0].name);
-    try {
-      let user = await getUserById(DB, id);
-      if (!user || typeof user ==="string") {
-        reject("User not found.");
+
+    DB_REQUEST.onsuccess = async () => {
+      const DB = DB_REQUEST.result;
+      const TRANSACTION = DB.transaction(
+        dbSchema.objectStores[0].name,
+        "readwrite",
+      );
+      const STORE = TRANSACTION.objectStore(dbSchema.objectStores[0].name);
+      try {
+        let user = await getUserById(id);
+        if (!user || typeof user === "string") {
+          reject("User not found.");
+          return;
+        }
+
+        let updatedUser = { ...user, ...updatedData };
+        const UPDATE_REQUEST = STORE.put(updatedUser);
+
+        UPDATE_REQUEST.onsuccess = () => {
+          resolve(updatedUser);
+        };
+        UPDATE_REQUEST.onerror = (error: unknown) => {
+          if (error instanceof Error) {
+            reject(error.message);
+            return;
+          }
+
+          if (typeof error === "string") {
+            reject(error);
+            return;
+          }
+        };
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    DB_REQUEST.onerror = (error: unknown) => {
+      if (error instanceof Error) {
+        reject(error.message);
         return;
       }
 
-      let updatedUser = { ...user, ...updatedData };
-      const UPDATE_REQUEST = STORE.put(updatedUser);
-
-      UPDATE_REQUEST.onsuccess = () => {
-        resolve(updatedUser);
-      };
-      UPDATE_REQUEST.onerror = (event: any) => {
-        reject(event?.target?.error ?? "Unknown error");
-      };
-    } catch (error) {
-      reject(error);
-    }
+      if (typeof error === "string") {
+        reject(error);
+        return;
+      }
+    };
   });
 };
 
@@ -262,8 +420,8 @@ const loginUser = ({
       }
 
       try {
-        let user = await getUserByEmail(DB, email);
-        if (!user || typeof user ==="string") {
+        let user = await getUserByEmail(email);
+        if (!user || typeof user === "string") {
           reject("User not found!");
           return;
         }

@@ -13,7 +13,6 @@ import { useState } from "react";
 import { useAuthCheck } from "../../../hooks";
 
 import { createUser, getAllUsers } from "../../../../database/model/user";
-import DBContext from "../../../context/contexts/DBContext";
 
 export default function NewUserFormDialog({
   setAddUserOpen,
@@ -26,7 +25,7 @@ export default function NewUserFormDialog({
     redirectTo: "/login",
     when: "unauthenticated",
   });
-  const db = React.useContext(DBContext);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -40,10 +39,8 @@ export default function NewUserFormDialog({
 
   const handleClose = async () => {
     try {
-      if (db) {
-        const response = await getAllUsers(db);
+        const response = await getAllUsers();
         setUsers(response);
-      }
     } catch (error: any) {
       setErrorMessage(error);
       return;

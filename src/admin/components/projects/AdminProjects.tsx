@@ -12,6 +12,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Typography,
 } from "@mui/material";
 
 // MUI Icons
@@ -26,7 +27,7 @@ import { AllProjectContext } from "../../../context/contexts/AppContext";
 // Components
 import NewProjectFormDialog from "../../../common/projects/NewProjectFormDialog";
 import ProjectCards from "../../../common/projects/ProjectCards";
-import type { ProjectType } from "../../../../database/model/project"
+import type { ProjectType } from "../../../../database/model/project";
 
 import { useAuthCheck } from "../../../hooks";
 
@@ -78,6 +79,10 @@ export default function AdminProjects(): ReactNode {
           setProjects={setProjects}
         />
       )}
+
+      <Typography variant="h6" sx={{ m: 2 }}>
+        Project Details
+      </Typography>
 
       <Stack
         direction="row-reverse"

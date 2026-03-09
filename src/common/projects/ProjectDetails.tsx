@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { AllProjectContext } from "../../context/contexts/AppContext";
 import { UserContext } from "../../context/contexts/UserContext";
-import DBContext from "../../context/contexts/DBContext";
 import { getUsersForProject } from "../../../database/model/assignment";
 
 import { useAuthCheck } from "../../hooks";
@@ -29,7 +28,6 @@ export default function ProjectDetails() {
 
   const { projects } = useContext(AllProjectContext);
   const { user } = useContext(UserContext);
-  const db = useContext(DBContext);
 
   const [members, setMembers] = useState<any[]>([]);
   const [editProject, setEditProject] = useState(false);
@@ -85,8 +83,7 @@ export default function ProjectDetails() {
 
     async function fetchMembers() {
       try {
-        if (!db) return;
-        const response = await getUsersForProject(db, project?.id ?? -1);
+        const response = await getUsersForProject(project?.id ?? -1);
         setMembers(response || []);
       } catch (error) {
         console.error(error);
@@ -94,7 +91,7 @@ export default function ProjectDetails() {
     }
 
     fetchMembers();
-  }, [projects, project?.id, db]);
+  }, [projects, project?.id]);
 
   if (!project) return null;
 

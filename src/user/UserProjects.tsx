@@ -1,11 +1,5 @@
 // External Libraries
-import {
-  useContext,
-  useMemo,
-  useState,
-  useCallback,
-  type ReactNode,
-} from "react";
+import { useContext, useMemo, useState, type ReactNode } from "react";
 
 import { PROJECT_STATUS } from "../constants/app.constants";
 
@@ -20,6 +14,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Typography,
 } from "@mui/material";
 
 // mui icons
@@ -32,7 +27,13 @@ import ProjectCards from "../common/projects/ProjectCards";
 
 // Types
 import { type ProjectType } from "../../database/model/project";
+import { useAuthCheck } from "../hooks";
 export default function UserProjects(): ReactNode {
+  useAuthCheck({
+    when: "unauthenticated",
+    redirectTo: "/login",
+  });
+
   const { projects, setProjects } = useContext(AllProjectContext);
 
   const [query, setQuery] = useState("");
@@ -102,6 +103,10 @@ export default function UserProjects(): ReactNode {
           setProjects={setProjects}
         />
       )}
+
+      <Typography variant="h6" sx={{ m: 2 }}>
+        Project Details
+      </Typography>
 
       <Stack
         direction="row-reverse"

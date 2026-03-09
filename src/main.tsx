@@ -8,18 +8,14 @@ import { BrowserRouter } from "react-router-dom";
 // Components
 import App from "./App.tsx";
 
-// Contexts
-import DBContextProvider from "./context/contextProviders/DBContextProvider.tsx";
 import UserContextProvider from "./context/contextProviders/UserContextProvider.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <DBContextProvider>
-        <UserContextProvider>
-          <App />
-        </UserContextProvider>
-      </DBContextProvider>
+      <UserContextProvider>
+        <App />
+      </UserContextProvider>
     </BrowserRouter>
   </StrictMode>,
 );

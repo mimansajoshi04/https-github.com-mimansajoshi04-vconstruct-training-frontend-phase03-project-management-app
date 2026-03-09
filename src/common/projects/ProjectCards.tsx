@@ -83,7 +83,7 @@ const ProjectCards = memo(function ProjectCardsComponent({
   if (!projects || projects.length === 0) {
     return (
       <Stack direction="column" sx={{ gap: "0.3rem", marginTop: "0.5rem" }}>
-        <Typography sx={{ color: "text.primary" }}>{title}</Typography>
+        <Typography sx={{ color: "text.primary" }} variant="h6">{title}</Typography>
         <Divider />
         <Box>
           <Typography sx={{ color: "text.secondary" }}>
@@ -105,7 +105,7 @@ const ProjectCards = memo(function ProjectCardsComponent({
       )}
 
       <Stack direction="column" sx={{ gap: "0.8rem", mt: 1 }}>
-        <Typography sx={{ color: "text.primary" }} variant="h5">
+        <Typography sx={{ color: "text.primary" }} variant="h6">
           {title}
         </Typography>
 

@@ -12,6 +12,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Typography,
 } from "@mui/material";
 
 // mui icons
@@ -28,7 +29,7 @@ import type { UserType } from "../../database/model/user";
 // constants
 import { USER_ROLES } from "../constants/app.constants";
 
-import {useAuthCheck} from "../hooks/index";
+import { useAuthCheck } from "../hooks/index";
 
 export default function Users(): ReactNode {
   useAuthCheck({
@@ -72,6 +73,10 @@ export default function Users(): ReactNode {
           setUsers={setUsers}
         />
       )}
+
+      <Typography variant="h6" sx={{ m: 2 }}>
+        User Details
+      </Typography>
 
       <Stack direction="row-reverse" spacing={2} alignItems="center">
         <Button variant="contained" onClick={() => setAddUserOpen(true)}>

@@ -1,85 +1,71 @@
 import dbSchema from "./schema";
 import schemaValues from "./schemaValues";
 
-import { createUser } from "../model/user";
-
-const createDB = async (): Promise<IDBDatabase | string> => {
+// Simplified database opener that always creates the schema and resolves or rejects the
+// returned promise.  The previous implementation relied on `indexedDB.databases()` which is
+// not available in every browser and, when it threw, the promise was left pending and the
+// calling code never received a result.  That caused the app to hang and no database would
+// show up in DevTools.
+const getDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     const REQUEST = indexedDB.open(dbSchema.name, dbSchema.version);
 
     REQUEST.onupgradeneeded = (event: any) => {
       const DB = event?.target?.result ?? null;
       if (!DB) {
-        reject("Failed to open database.");
+        reject(new Error("Failed to open database during upgrade."));
+        return;
       }
+
       dbSchema.objectStores.forEach((store) => {
         if (!DB.objectStoreNames.contains(store.name)) {
           const STORE = DB.createObjectStore(store.name, store.options);
-          store.indexes.forEach(async (index) => {
-            await STORE.createIndex(
-              index.name,
-              index.keyPath,
-              index.options,
-            );
+          store.indexes.forEach((index) => {
+            STORE.createIndex(index.name, index.keyPath, index.options);
           });
         }
       });
     };
 
-    REQUEST.onsuccess = async () => {
+    REQUEST.onsuccess = async (event: any) => {
+      const DB = event?.target?.result ?? null;
+      if (!DB) {
+        reject(new Error("Failed to open database."));
+        return;
+      }
+
+      // ensure we always have an admin user after the database is opened for the first time
       try {
-        try {
-          let response = await createUser(schemaValues.users.admin);
-          if (!response) reject("Failed to create admin user.");
-          const DB = REQUEST.result;
-          resolve(DB);
-        } catch (error) {
-          indexedDB.deleteDatabase(dbSchema.name);
-          reject("Error creating admin user, database reset.");
-        }
-      } catch (error) {
-        indexedDB.deleteDatabase(dbSchema.name);
-        reject("Error creating admin user, database reset.");
-      }
-    };
-    REQUEST.onerror = (event: any) => {
-      reject(event?.target?.error ?? "Unknown error");
-    };
-  });
-};
+        const tx = DB.transaction(dbSchema.objectStores[0].name, "readwrite");
+        const store = tx.objectStore(dbSchema.objectStores[0].name);
+        const emailIndex = store.index("email");
+        const checkReq = emailIndex.get(schemaValues.users.admin.email);
 
-const getDB = async (): Promise<IDBDatabase|string> => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      let databases = await indexedDB.databases();
-      let myDataBase = databases.find((db) => db.name === dbSchema.name);
-      if (!myDataBase) {
-        try {
-          let response = await createDB();
-          if (!response || typeof response==="string") {
-            reject("Failed to create database.");
-            return;
+        checkReq.onsuccess = () => {
+          if (!checkReq.result) {
+            // no admin present yet, try to add one
+            store.add(schemaValues.users.admin).onerror = (err: unknown) => {
+              // if this fails we don't want to block the promise – just log
+              console.error("Failed to add default admin user:", err);
+            };
           }
-          resolve(response);
-        } catch (error) {
-          reject("Error creating database.");
-        }
-      } else {
-        const REQUEST = indexedDB.open(dbSchema.name, dbSchema.version);
-
-        REQUEST.onsuccess = (event: any) => {
-          const DB = event?.target?.result ?? null;
-          if (!DB) {
-            reject("Failed to open database.");
-            return;
-          }
-          resolve(DB);
         };
+        checkReq.onerror = (err: unknown) => {
+          console.error("Error checking for admin user:", err);
+        };
+      } catch (err) {
+        console.error("Error setting up default admin:", err);
       }
-    } catch (error) {
-      console.error("Error fetching databases:", error);
-    }
+
+      resolve(DB);
+    };
+
+    REQUEST.onerror = (event: any) => {
+      reject(
+        event?.target?.error ?? new Error("Unknown error opening database."),
+      );
+    };
   });
 };
 
-export { createDB, getDB };
+export { getDB };
