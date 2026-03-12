@@ -49,7 +49,7 @@ export default function ProjectMembers({
     when: "unauthenticated",
   });
 
-  if (projectId == -1) return <></>;
+  if (projectId ===-1) return <></>;
 
   const [query, setQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
@@ -81,7 +81,7 @@ export default function ProjectMembers({
 
   const getIds = (): number[] => {
     let res: number[] = [];
-    if (members.length == 0) return res;
+    if (members.length === 0) return res;
     return members.map((m) => m?.id ?? -2);
   };
 
@@ -191,7 +191,7 @@ export default function ProjectMembers({
                   label={member.role}
                   size="small"
                   sx={{ mt: 1 }}
-                  color={member.role === "admin" ? "error" : "primary"}
+                  color={member.role === USER_ROLES.ADMIN ? "error" : "primary"}
                 />
               </CardContent>
             </Card>
@@ -207,6 +207,7 @@ import { MultipleSelectCheckmarks } from "./NewProjectFormDialog";
 import { createProjectUserRelation } from "../../../database/model/assignment";
 import { UserContext } from "../../context/contexts/UserContext";
 import { getAllData } from "../../services/getData";
+import { USER_ROLES } from "../../constants/app.constants";
 
 export function AssignNewMembers({
   setAssignMembersOpen,

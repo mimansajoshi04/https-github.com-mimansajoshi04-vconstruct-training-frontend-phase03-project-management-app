@@ -45,7 +45,7 @@ const createProjectUserRelation = (
         let result = GET_REQUEST.result;
         let existingRelation = result.filter(
           (r) =>
-            r.userId == relation.userId && r.projectId == relation.projectId,
+            r.userId === relation.userId && r.projectId === relation.projectId,
         );
 
         if (existingRelation.length > 0) {
@@ -116,7 +116,7 @@ const getUsersForProject = (projectId: number): Promise<UserType[]> => {
 
       GET_REQUEST.onsuccess = () => {
         const RESULT = GET_REQUEST.result;
-        const DATA = RESULT.filter((p) => p.projectId == projectId);
+        const DATA = RESULT.filter((p) => p.projectId === projectId);
 
         let totalMembers = DATA.length;
         let members: UserType[] = [];
@@ -126,21 +126,24 @@ const getUsersForProject = (projectId: number): Promise<UserType[]> => {
           let userId = relation.userId;
           try {
             let member = await getUserById(userId);
-            if (typeof member !== "string")
+            if (typeof member !=="string")
               members.push({
-                ...member,
+                name:member.name,
+                role: member.role,
+                email: member.email,
+                avatar_color: member.avatar_color,
                 id: userId,
               });
             completed++;
 
-            if (completed == totalMembers) {
+            if (completed === totalMembers) {
               resolve(members);
             }
           } catch (error) {
             console.error(error);
             completed++;
 
-            if (completed == totalMembers) {
+            if (completed === totalMembers) {
               resolve(members);
             }
           }

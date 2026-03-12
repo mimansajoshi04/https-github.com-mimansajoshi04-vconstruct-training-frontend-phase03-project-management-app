@@ -135,7 +135,7 @@ const getStoryForProjectId = (id: number): Promise<StoryType[] | string> => {
       return;
     }
 
-    let filteredStories = allStories.filter((story) => story.projectId == id);
+    let filteredStories = allStories.filter((story) => story.projectId === id);
     resolve(filteredStories);
   });
 };
@@ -148,7 +148,7 @@ const getStoryForUserId = (id: number): Promise<StoryType[] | string> => {
       return;
     }
 
-    let filteredStories = allStories.filter((story) => story.userId == id);
+    let filteredStories = allStories.filter((story) => story.userId === id);
     resolve(filteredStories);
   });
 };

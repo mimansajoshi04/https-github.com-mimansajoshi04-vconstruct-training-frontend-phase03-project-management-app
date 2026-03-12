@@ -1,11 +1,11 @@
 // External Libraries
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from "react";
 
 // MUI Components
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Modal from '@mui/material/Modal';
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
+import Modal from "@mui/material/Modal";
 
 const MODAL_STYLE = {
   position: "absolute",
@@ -39,6 +39,20 @@ export default function ErrorModal({
     callFunction();
   };
 
+  useEffect(() => {
+    const handleEnterKeyPress = (event: KeyboardEvent) => {
+      if (event.code === "Enter" || event.code === "Space") {
+        handleClose();
+      }
+    };
+
+    window.addEventListener("keypress", handleEnterKeyPress);
+
+    return () => {
+      window.removeEventListener("keypress", handleEnterKeyPress);
+    };
+  }, []);
+
   return (
     <Modal
       open={open}
@@ -50,10 +64,7 @@ export default function ErrorModal({
         <Typography id="error-modal-title" variant="h6" component="h2">
           {messageTitle}
         </Typography>
-        <Typography
-          id="error-modal-description"
-          sx={{ mt: 2 }}
-        >
+        <Typography id="error-modal-description" sx={{ mt: 2 }}>
           {errorMessage}
         </Typography>
         <Button onClick={handleClose} sx={{ mt: 2 }}>

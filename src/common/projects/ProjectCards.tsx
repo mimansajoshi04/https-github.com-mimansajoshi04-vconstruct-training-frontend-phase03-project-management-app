@@ -1,5 +1,5 @@
 // External Libraries
-import { memo, useContext, type ReactNode, useState } from "react";
+import { memo, useContext, type ReactNode, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 // MUI Components
@@ -19,7 +19,11 @@ import {
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 
 // Constants
-import { PROJECT_STATUS, USER_ROLES } from "../../constants/app.constants";
+import {
+  PROJECT_STATUS,
+  PROJECT_TYPES,
+  USER_ROLES,
+} from "../../constants/app.constants";
 
 // Contexts
 import { UserContext } from "../../context/contexts/UserContext";
@@ -32,8 +36,9 @@ interface ProjectCardsProps {
 }
 
 import { useAuthCheck } from "../../hooks";
+import { formatDate } from "../../utils/formatDate";
 
-const ProjectCards = memo(function ProjectCardsComponent({
+const ProjectCardsView = memo(function ProjectCardsViewComponent({
   projects,
   title,
 }: ProjectCardsProps): ReactNode {
@@ -43,47 +48,36 @@ const ProjectCards = memo(function ProjectCardsComponent({
   });
 
   const { user } = useContext(UserContext);
-  const navigate = useNavigate();
 
-  const isAdmin = user?.role === USER_ROLES.ADMIN;
+  const isAdmin = useCallback(() => {
+    return user?.role === USER_ROLES.ADMIN;
+  }, [user?.role]);
 
   const [selectedProject, setSelectedProject] = useState<ProjectType | null>(
     null,
   );
   const [openEditForm, setOpenEditForm] = useState(false);
 
-  const handleOpenEditForm = (project: ProjectType | null) => {
+  const handleOpenEditForm = useCallback((project: ProjectType | null) => {
     setSelectedProject(project);
     setOpenEditForm(!!project);
-  };
+  }, []);
 
   const handleCloseEditForm = () => {
     setOpenEditForm(false);
     setSelectedProject(null);
   };
 
-  const isProjectOverdue = (project: ProjectType): boolean => {
-    return new Date(project.deadline_date) < new Date();
-  };
-
-  const isProjectAssigned = (project: ProjectType): boolean => {
+  const isProjectAssigned = useCallback((project: ProjectType): boolean => {
     return "assignedAt" in project;
-  };
-
-  const handleViewProject = (project: ProjectType) => {
-    if (isAdmin) {
-      navigate(`/dashboard/projects/admin/${project.id}`);
-    } else if (isProjectAssigned(project)) {
-      navigate(`/dashboard/projects/assigned/${project.id}`);
-    } else {
-      navigate(`/dashboard/projects/created/${project.id}`);
-    }
-  };
+  }, []);
 
   if (!projects || projects.length === 0) {
     return (
       <Stack direction="column" sx={{ gap: "0.3rem", marginTop: "0.5rem" }}>
-        <Typography sx={{ color: "text.primary" }} variant="h6">{title}</Typography>
+        <Typography sx={{ color: "text.primary" }} variant="h6">
+          {title}
+        </Typography>
         <Divider />
         <Box>
           <Typography sx={{ color: "text.secondary" }}>
@@ -100,7 +94,7 @@ const ProjectCards = memo(function ProjectCardsComponent({
         <EditProjectFormDialog
           setEditProjectOpen={handleCloseEditForm}
           project={selectedProject}
-          type={isAdmin ? "admin" : "created"}
+          type={isAdmin() ? PROJECT_TYPES.ADMIN : PROJECT_TYPES.CREATED}
         />
       )}
 
@@ -111,130 +105,159 @@ const ProjectCards = memo(function ProjectCardsComponent({
 
         <Divider />
 
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, 1fr)",
-              md: "repeat(3, 1fr)",
-              lg: "repeat(4, 1fr)",
-            },
-            gap: 3,
-            width: "100%",
-            mt: 2,
-          }}
-        >
-          {projects.map((project: ProjectType) => {
-            const overdue = isProjectOverdue(project);
-            const assigned = isProjectAssigned(project);
-
-            return (
-              <Card
-                key={project.id}
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  transition: "0.2s",
-                  borderRadius: 3,
-                  "&:hover": {
-                    boxShadow: 6,
-                    transform: "translateY(-4px)",
-                  },
-                }}
-              >
-                <CardContent>
-                  <Stack spacing={1}>
-                    <Stack direction="row" spacing={1} alignItems="flex-start">
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          flex: 1,
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {project.name}
-                      </Typography>
-
-                      <Chip
-                        label={
-                          overdue
-                            ? PROJECT_STATUS.OVERDUE
-                            : PROJECT_STATUS.ACTIVE
-                        }
-                        color={overdue ? "error" : "success"}
-                        size="small"
-                        sx={{ flexShrink: 0, mt: "4px" }}
-                      />
-                    </Stack>
-
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "text.secondary" }}
-                    >
-                      {project.description}
-                    </Typography>
-
-                    <Divider />
-
-                    <Typography variant="caption">
-                      Start: {new Date(project.start_date).toLocaleDateString()}
-                    </Typography>
-
-                    <Typography variant="caption">
-                      Deadline:{" "}
-                      {new Date(project.deadline_date).toLocaleDateString()}
-                    </Typography>
-
-                    {assigned && project.assignedAt && (
-                      <Typography variant="caption">
-                        Assigned:{" "}
-                        {new Date(project.assignedAt).toLocaleDateString()}
-                      </Typography>
-                    )}
-
-                    <Typography variant="caption">
-                      Created:{" "}
-                      {new Date(project.created_at).toLocaleDateString()}
-                    </Typography>
-                  </Stack>
-                </CardContent>
-
-                {/* Actions */}
-                <CardActions
-                  sx={{
-                    justifyContent: "space-between",
-                    px: 2,
-                    pb: 2,
-                  }}
-                >
-                  <Button
-                    size="small"
-                    variant="contained"
-                    onClick={() => handleViewProject(project)}
-                  >
-                    View
-                  </Button>
-
-                  {(isAdmin || !assigned) && (
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<EditRoundedIcon />}
-                      onClick={() => handleOpenEditForm(project)}
-                    >
-                      Edit
-                    </Button>
-                  )}
-                </CardActions>
-              </Card>
-            );
-          })}
-        </Box>
+        <ProjectCards
+          projects={projects}
+          isProjectAssigned={isProjectAssigned}
+          isAdmin={isAdmin}
+          handleOpenEditForm={handleOpenEditForm}
+        />
       </Stack>
     </Box>
   );
 });
 
-export default ProjectCards;
+const ProjectCards = memo(function ProjectCards({
+  projects,
+  isProjectAssigned,
+  isAdmin,
+  handleOpenEditForm,
+}: {
+  projects: ProjectType[];
+  isProjectAssigned: Function;
+  isAdmin: Function;
+  handleOpenEditForm: Function;
+}): ReactNode {
+  const navigate = useNavigate();
+
+  const isProjectOverdue = (project: ProjectType): boolean => {
+    return new Date(project.deadline_date) < new Date();
+  };
+
+  const handleViewProject = (project: ProjectType) => {
+    if (isAdmin()) {
+      navigate(`/dashboard/projects/${PROJECT_TYPES.ADMIN}/${project.id}`);
+    } else if (isProjectAssigned(project)) {
+      navigate(`/dashboard/projects/${PROJECT_TYPES.ASSIGNED}/${project.id}`);
+    } else {
+      navigate(`/dashboard/projects/${PROJECT_TYPES.CREATED}/${project.id}`);
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: {
+          xs: "1fr",
+          sm: "repeat(2, 1fr)",
+          md: "repeat(3, 1fr)",
+          lg: "repeat(4, 1fr)",
+        },
+        gap: 3,
+        width: "100%",
+        mt: 2,
+      }}
+    >
+      {projects.map((project: ProjectType) => {
+        const overdue = isProjectOverdue(project);
+        const assigned = isProjectAssigned(project);
+
+        return (
+          <Card
+            key={project.id}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              transition: "0.2s",
+              borderRadius: 3,
+              "&:hover": {
+                boxShadow: 6,
+                transform: "translateY(-4px)",
+              },
+            }}
+          >
+            <CardContent>
+              <Stack spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="flex-start">
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      flex: 1,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {project.name}
+                  </Typography>
+
+                  <Chip
+                    label={
+                      overdue ? PROJECT_STATUS.OVERDUE : PROJECT_STATUS.ACTIVE
+                    }
+                    color={overdue ? "error" : "success"}
+                    size="small"
+                    sx={{ flexShrink: 0, mt: "4px" }}
+                  />
+                </Stack>
+
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  {project.description}
+                </Typography>
+
+                <Divider />
+
+                <Typography variant="caption">
+                  Start: {formatDate(project.start_date)}
+                </Typography>
+
+                <Typography variant="caption">
+                  Deadline: {formatDate(project.deadline_date)}
+                </Typography>
+
+                {assigned && project.assignedAt && (
+                  <Typography variant="caption">
+                    Assigned: {formatDate(project.assignedAt)}
+                  </Typography>
+                )}
+
+                <Typography variant="caption">
+                  Created: {formatDate(project.created_at)}
+                </Typography>
+              </Stack>
+            </CardContent>
+
+            {/* Actions */}
+            <CardActions
+              sx={{
+                justifyContent: "space-between",
+                px: 2,
+                pb: 2,
+              }}
+            >
+              <Button
+                size="small"
+                variant="contained"
+                onClick={() => handleViewProject(project)}
+              >
+                View
+              </Button>
+
+              {(isAdmin() || !assigned) && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<EditRoundedIcon />}
+                  onClick={() => handleOpenEditForm(project)}
+                >
+                  Edit
+                </Button>
+              )}
+            </CardActions>
+          </Card>
+        );
+      })}
+    </Box>
+  );
+});
+
+export default ProjectCardsView;

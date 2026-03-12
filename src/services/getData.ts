@@ -5,6 +5,7 @@ import {
 } from "../../database/model/project";
 import { getAllProjects } from "../../database/model/project";
 import type { ProjectDataStructure } from "../types";
+import { USER_ROLES } from "../constants/app.constants";
 
 interface AppData {
   userData?: UserType[];
@@ -16,7 +17,7 @@ const getAllData = (user: UserType): Promise<AppData> => {
     try {
       let userData = await getAllUsers();
       let projectData =
-        user.role == "admin"
+        user.role === USER_ROLES.ADMIN
           ? await getAllProjects()
           : await getProjectsByUserId(user?.id ?? -1);
 

@@ -14,6 +14,19 @@ export const PROJECT_STATUS = {
   OVERDUE: "overdue",
 } as const;
 
+export const PROJECT_TYPES = {
+  ADMIN: "admin",
+  ALL: "all",
+  ASSIGNED: "assigned",
+  CREATED: "created",
+};
+
+export const STORY_PRIORITY = {
+  LOW: "low",
+  MEDIUM: "medium",
+  HIGH: "high",
+};
+
 export const ROUTE_PATHS = {
   LOGIN: "/login",
   REGISTER: "/register",

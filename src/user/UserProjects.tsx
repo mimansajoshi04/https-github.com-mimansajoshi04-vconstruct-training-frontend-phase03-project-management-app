@@ -23,7 +23,7 @@ import { AllProjectContext } from "../context/contexts/AppContext";
 
 // components
 import NewProjectFormDialog from "../common/projects/NewProjectFormDialog";
-import ProjectCards from "../common/projects/ProjectCards";
+import ProjectCardsView from "../common/projects/ProjectCards";
 
 // Types
 import { type ProjectType } from "../../database/model/project";
@@ -95,6 +95,11 @@ export default function UserProjects(): ReactNode {
     setQuery(event.target.value);
   };
 
+  const resetFilters = () => {
+    setQuery("");
+    setSelectedStatus("");
+  };
+
   return (
     <Box>
       {addProjectOpen && (
@@ -103,6 +108,7 @@ export default function UserProjects(): ReactNode {
           setProjects={setProjects}
         />
       )}
+      
 
       <Typography variant="h6" sx={{ m: 2 }}>
         Project Details
@@ -116,6 +122,10 @@ export default function UserProjects(): ReactNode {
       >
         <Button variant="contained" onClick={() => setAddProjectOpen(true)}>
           Add New Project
+        </Button>
+
+        <Button variant="outlined" onClick={() => resetFilters()}>
+          Reset Filters
         </Button>
 
         <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -149,11 +159,11 @@ export default function UserProjects(): ReactNode {
         />
       </Stack>
       <Stack direction="column" sx={{ gap: "0.5rem" }}>
-        <ProjectCards
+        <ProjectCardsView
           projects={filteredCreatedProjects}
           title="Created By You"
         />
-        <ProjectCards
+        <ProjectCardsView
           projects={filteredAssignedProjects}
           title="Assigned to You"
         />

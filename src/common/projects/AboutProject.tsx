@@ -19,6 +19,8 @@ import { getInitials } from "../../../database/createAvatar";
 import { useContext, type ReactNode } from "react";
 import { AllUserContext } from "../../context/contexts/AppContext";
 
+import { formatDate } from "../../utils/formatDate";
+
 export default function AboutProject({
   project,
   isAssigned,
@@ -31,7 +33,7 @@ export default function AboutProject({
   const isOverdue = new Date(project.deadline_date) < new Date();
 
   let createdBy: UserType[] | null =
-    users?.filter((u) => u.id == project.created_by) ?? null;
+    users?.filter((u) => u.id === project.created_by) ?? null;
 
   return (
     <Card sx={{ mt: 4, borderRadius: 3 }}>
@@ -99,15 +101,14 @@ export default function AboutProject({
               <Stack direction="row" spacing={1} alignItems="center">
                 <AccessTimeIcon sx={{ fontSize: 16, color: "primary.main" }} />
                 <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                  Start: {new Date(project.start_date).toLocaleDateString()}
+                  Start: {formatDate(project.start_date)}
                 </Typography>
               </Stack>
 
               <Stack direction="row" spacing={1} alignItems="center">
                 <EventIcon sx={{ fontSize: 16, color: "error.main" }} />
                 <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                  Deadline:{" "}
-                  {new Date(project.deadline_date).toLocaleDateString()}
+                  Deadline: {formatDate(project.deadline_date)}
                 </Typography>
               </Stack>
 
@@ -116,7 +117,7 @@ export default function AboutProject({
                   sx={{ fontSize: 16, color: "text.secondary" }}
                 />
                 <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                  Created: {new Date(project.created_at).toLocaleDateString()}
+                  Created: {formatDate(project.created_at)}
                 </Typography>
               </Stack>
 
@@ -126,8 +127,7 @@ export default function AboutProject({
                     sx={{ fontSize: 16, color: "text.secondary" }}
                   />
                   <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                    Assigned:{" "}
-                    {new Date(project.assignedAt).toLocaleDateString()}
+                    Assigned: {formatDate(project.assignedAt)}
                   </Typography>
                 </Stack>
               )}
@@ -136,8 +136,7 @@ export default function AboutProject({
                 <AccessTimeIcon sx={{ fontSize: 16, color: "primary.main" }} />
 
                 <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                  Last Updated:{" "}
-                  {new Date(project.updated_at).toLocaleDateString()}
+                  Last Updated: {formatDate(project.updated_at)}
                 </Typography>
               </Stack>
             </Stack>

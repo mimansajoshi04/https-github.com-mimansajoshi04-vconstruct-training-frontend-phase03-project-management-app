@@ -30,6 +30,8 @@ import { useTheme } from "@mui/material/styles";
 import EditStoryFormDialog from "./EditStoryFormDialog";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteForeverRoundedIcon from "@mui/icons-material/DeleteForeverRounded";
+import { formatDate } from "../../utils/formatDate";
+import DeleteStory from "./DeleteStoryModal";
 
 function getPriorityColor(priority: string) {
   switch (priority) {
@@ -84,26 +86,39 @@ export default function KanbanBoardCard({
   const { users } = useContext(AllUserContext);
 
   const [editStoryOpen, setEditStoryOpen] = useState<boolean>(false);
-  const editStory: any = useRef(null);
+  const [deleteStoryOpen, setDeleteStoryOpen] = useState<boolean>(false);
+  const storyRef: any = useRef(null);
 
   const handleStoryEdit = (story: StoryType) => {
     if (story) {
-      editStory.current = story;
+      storyRef.current = story;
       setEditStoryOpen(true);
     }
   };
+
+  const handleDeleteStoryModal = (story: StoryType) => {
+    if (story) {
+      storyRef.current = story;
+      setDeleteStoryOpen(true);
+    }
+  };
+
   const handleDeleteStory = async (storyId: number) => {
     try {
+      console.log(storyId);
       await deleteStoryById(storyId);
 
       const response = await getStoryForProjectId(projectId);
       if (typeof response === "string") {
+        console.log(response);
         return;
       }
-
       setStories(response);
+      setDeleteStoryOpen(false);
     } catch (error) {
+      // console.log(error);
       return;
+    } finally {
     }
   };
   return (
@@ -117,12 +132,19 @@ export default function KanbanBoardCard({
         boxShadow: 1,
       }}
     >
-      {editStoryOpen && editStory && (
+      {editStoryOpen && storyRef && (
         <EditStoryFormDialog
           setEditStoryOpen={setEditStoryOpen}
           setStories={setStories}
           members={members}
-          story={editStory.current}
+          story={storyRef.current}
+        />
+      )}
+
+      {deleteStoryOpen && (
+        <DeleteStory
+          callFunction={() => handleDeleteStory(storyRef.current.id)}
+          closeFunction={() => setDeleteStoryOpen(false)}
         />
       )}
       <Box sx={{ marginBottom: 2 }}>
@@ -141,13 +163,13 @@ export default function KanbanBoardCard({
           let assignedTo =
             story.userId === user?.id
               ? user
-              : members.filter((m) => m.id == story.userId)[0];
+              : members.filter((m) => m.id === story.userId)[0];
 
           let assignedBy =
             story.created_by === user?.id
               ? user
-              : (members.filter((m) => m.id == story.created_by)[0] ??
-                users?.filter((m) => m.id == story.created_by)[0]);
+              : (members.filter((m) => m.id === story.created_by)[0] ??
+                users?.filter((m) => m.id === story.created_by)[0]);
 
           // console.log(assignedTo);
           // console.log(assignedBy);
@@ -192,7 +214,7 @@ export default function KanbanBoardCard({
                 <Box>
                   <Typography variant="caption">Due date</Typography>
                   <Typography variant="subtitle2">
-                    {story.due_date.toLocaleDateString()}
+                    {formatDate(story.due_date)}
                   </Typography>
                 </Box>
 
@@ -266,7 +288,7 @@ export default function KanbanBoardCard({
                         startIcon={<DeleteForeverRoundedIcon />}
                         variant="outlined"
                         onClick={() => {
-                          handleDeleteStory(story?.id ?? -1);
+                          handleDeleteStoryModal(story);
                         }}
                         sx={{
                           color: theme.palette.text.primary,

@@ -46,7 +46,8 @@ const UserCards = memo(function UserCardsComponent({
         },
         gap: 2, // spacing between cards
         width: "100%",
-        margin: "2rem",
+        mt:2,
+        mr:2
       }}
     >
       {users.map((user: UserType) => {

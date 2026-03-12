@@ -35,7 +35,7 @@ export const useDataForUser = (): DataType => {
     };
 
     loadData();
-  }, []);
+  }, [user]);
 
   return { allUsers, projectData, setAllUsers, setProjectData };
 };

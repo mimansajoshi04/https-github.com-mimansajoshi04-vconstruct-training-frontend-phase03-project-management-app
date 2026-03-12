@@ -23,6 +23,7 @@ import { AllProjectContext } from "../../context/contexts/AppContext";
 import { useNavigate } from "react-router-dom";
 
 import { useAuthCheck } from "../../hooks";
+import { PROJECT_TYPES, USER_ROLES } from "../../constants/app.constants";
 
 export default function EditProjectFormDialog({
   setEditProjectOpen,
@@ -106,7 +107,7 @@ export default function EditProjectFormDialog({
 
       if (!projects) return;
 
-      if (projects && type == "admin") {
+      if (projects && type === PROJECT_TYPES.ADMIN) {
         if (Array.isArray(projects)) {
           otherProjects = projects.filter(
             (proj: ProjectType) => proj.id != project.id,
@@ -114,7 +115,7 @@ export default function EditProjectFormDialog({
           otherProjects.push(response);
           setProjects(otherProjects);
         }
-      } else if (type == "created") {
+      } else if (type === PROJECT_TYPES.CREATED) {
         if (!Array.isArray(projects)) {
           otherProjects = projects.createdProjects.filter(
             (proj: ProjectType) => proj.id != project.id,

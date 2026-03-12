@@ -49,7 +49,7 @@ const createUser = ({
         } else {
           // finally add the user to the object store
           let avatar_color = createColor();
-          const ADD_REQUEST = await STORE.add({
+          const ADD_REQUEST = STORE.add({
             name,
             email,
             role,
@@ -229,11 +229,16 @@ const getUserById = (id: number): Promise<UserType | string> => {
 
       REQUEST.onsuccess = () => {
         let result = REQUEST.result;
+        if (!result) {
+          reject("User not found!");
+          return;
+        }
         resolve({
           name: result.name,
           role: result.role,
           avatar_color: result.avatar_color,
           email: result.email,
+          password: result.password,
         });
       };
       REQUEST.onerror = (error: unknown) => {
@@ -347,6 +352,12 @@ const updateUserById = (
   updatedData: Partial<UserType>,
 ): Promise<UserType | string> => {
   return new Promise(async (resolve, reject) => {
+    let user = await getUserById(id);
+    if (!user || typeof user === "string") {
+      reject("User not found.");
+      return;
+    }
+
     const DB_REQUEST = indexedDB.open(
       dbSchema.name ?? "project-management-app",
       dbSchema.version ?? 1,
@@ -360,19 +371,19 @@ const updateUserById = (
       );
       const STORE = TRANSACTION.objectStore(dbSchema.objectStores[0].name);
       try {
-        let user = await getUserById(id);
-        if (!user || typeof user === "string") {
-          reject("User not found.");
-          return;
-        }
-
-        let updatedUser = { ...user, ...updatedData };
+        let updatedUser = {
+          id: id,
+          ...user,
+          ...updatedData,
+        };
         const UPDATE_REQUEST = STORE.put(updatedUser);
 
         UPDATE_REQUEST.onsuccess = () => {
           resolve(updatedUser);
         };
-        UPDATE_REQUEST.onerror = (error: unknown) => {
+        UPDATE_REQUEST.onerror = (error: any) => {
+          console.log(error.target);
+
           if (error instanceof Error) {
             reject(error.message);
             return;

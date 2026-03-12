@@ -33,6 +33,7 @@ import { type UserType } from "../../../database/model/user";
 
 import { useAuthCheck } from "../../hooks/index";
 import {getAllData} from "../../services/getData";
+import { USER_ROLES } from "../../constants/app.constants";
 
 export default function NewProjectFormDialog({
   setAddProjectOpen,
@@ -235,7 +236,7 @@ export function MultipleSelectCheckmarks({
     }
   };
 
-  const filteredUsers = users.filter((u) => u.role !== "admin");
+  const filteredUsers = users.filter((u) => u.role !== USER_ROLES.ADMIN);
 
   return (
     <FormControl fullWidth sx={{ marginTop: "0.5rem" }}>

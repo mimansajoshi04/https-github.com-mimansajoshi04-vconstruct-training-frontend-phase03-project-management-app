@@ -30,6 +30,7 @@ import {
 import type { UserType } from "../../../database/model/user";
 import { useParams } from "react-router-dom";
 import { UserContext } from "../../context/contexts/UserContext";
+import { KANBAN_STAUS, STORY_PRIORITY, USER_ROLES } from "../../constants/app.constants";
 
 export default function NewStoryFormDialog({
   setNewStoryOpen,
@@ -167,10 +168,10 @@ export default function NewStoryFormDialog({
                 label="Status"
                 onChange={handleChange}
               >
-                <MenuItem value="backlog">Backlog</MenuItem>
-                <MenuItem value="in_progress">In Progress</MenuItem>
-                <MenuItem value="testing">Testing</MenuItem>
-                <MenuItem value="done">Done</MenuItem>
+                <MenuItem value={KANBAN_STAUS.BACKLOG}>Backlog</MenuItem>
+                <MenuItem value={KANBAN_STAUS.IN_PROGRESS}>In Progress</MenuItem>
+                <MenuItem value={KANBAN_STAUS.TESTING}>Testing</MenuItem>
+                <MenuItem value={KANBAN_STAUS.DONE}>Done</MenuItem>
               </Select>
             </FormControl>
 
@@ -182,9 +183,9 @@ export default function NewStoryFormDialog({
                 label="Priority"
                 onChange={handleChange}
               >
-                <MenuItem value="low">Low</MenuItem>
-                <MenuItem value="medium">Medium</MenuItem>
-                <MenuItem value="high">High</MenuItem>
+                <MenuItem value={STORY_PRIORITY.LOW}>Low</MenuItem>
+                <MenuItem value={STORY_PRIORITY.MEDIUM}>Medium</MenuItem>
+                <MenuItem value={STORY_PRIORITY.HIGH}>High</MenuItem>
               </Select>
             </FormControl>
 
@@ -196,7 +197,7 @@ export default function NewStoryFormDialog({
                 label="Member"
                 onChange={handleChange}
               >
-                {user?.role!=="admin" && <MenuItem value={user?.id}>Self</MenuItem>}
+                {user?.role!==USER_ROLES.ADMIN && <MenuItem value={user?.id}>Self</MenuItem>}
                 {members.map((m) => {
                   return <MenuItem value={String(m.id)}>{m.name}</MenuItem>;
                 })}

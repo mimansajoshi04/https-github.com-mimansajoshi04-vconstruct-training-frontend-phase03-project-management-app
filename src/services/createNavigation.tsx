@@ -3,6 +3,7 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import GroupIcon from "@mui/icons-material/Group";
 import LogoutIcon from "@mui/icons-material/Logout";
+import SettingsIcon from "@mui/icons-material/Settings";
 import {
   type Navigation,
   type NavigationItem,
@@ -11,6 +12,7 @@ import {
 import type { ProjectType } from "../../database/model/project";
 import type { ProjectDataStructure } from "../types";
 import type { UserType } from "../../database/model/user";
+import { USER_ROLES } from "../constants/app.constants";
 
 const adminNavigationChildren = (projectData: ProjectType[]) => {
   const adminProjectsChildren: NavigationItem[] =
@@ -92,7 +94,7 @@ const createChildrenForNavigation = (
   projectData: ProjectDataStructure | ProjectType[],
 ) => {
   const childrenForNavigation =
-    user.role == "admin"
+    user.role === USER_ROLES.ADMIN
       ? adminNavigationChildren(Array.isArray(projectData) ? projectData : [])
       : !Array.isArray(projectData)
         ? userNavigationChildren(projectData)
@@ -117,13 +119,18 @@ const createNavigation = (
     },
     { kind: "divider" },
     {
+      segment: "settings",
+      title: "Settings",
+      icon: <SettingsIcon />,
+    },
+    {
       segment: "logout",
       title: "Logout",
       icon: <LogoutIcon />,
     },
   ];
 
-  if (user.role === "admin") {
+  if (user.role === USER_ROLES.ADMIN) {
     NAVIGATION.push({ kind: "divider" });
     NAVIGATION.push({
       segment: "users",

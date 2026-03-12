@@ -65,6 +65,11 @@ export default function Users(): ReactNode {
     setQuery(event.target.value);
   };
 
+  const resetFilters = () => {
+    setQuery("");
+    setSelectedRole("");
+  };
+
   return (
     <Box>
       {addUserOpen && (
@@ -81,6 +86,10 @@ export default function Users(): ReactNode {
       <Stack direction="row-reverse" spacing={2} alignItems="center">
         <Button variant="contained" onClick={() => setAddUserOpen(true)}>
           Add New User
+        </Button>
+
+        <Button variant="outlined" onClick={() => resetFilters()}>
+          Reset Filters
         </Button>
 
         <FormControl size="small" sx={{ minWidth: 140 }}>

@@ -26,7 +26,7 @@ import { AllProjectContext } from "../../../context/contexts/AppContext";
 
 // Components
 import NewProjectFormDialog from "../../../common/projects/NewProjectFormDialog";
-import ProjectCards from "../../../common/projects/ProjectCards";
+import ProjectCardsView from "../../../common/projects/ProjectCards";
 import type { ProjectType } from "../../../../database/model/project";
 
 import { useAuthCheck } from "../../../hooks";
@@ -71,6 +71,11 @@ export default function AdminProjects(): ReactNode {
     setQuery(value);
   };
 
+  const resetFilters = () => {
+    setQuery("");
+    setSelectedStatus("");
+  };
+
   return (
     <Box>
       {addProjectOpen && (
@@ -92,6 +97,10 @@ export default function AdminProjects(): ReactNode {
       >
         <Button variant="contained" onClick={() => setAddProjectOpen(true)}>
           Add New Project
+        </Button>
+
+        <Button variant="outlined" onClick={() => resetFilters()}>
+          Reset Filters
         </Button>
 
         <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -125,7 +134,7 @@ export default function AdminProjects(): ReactNode {
         />
       </Stack>
 
-      <ProjectCards projects={filteredProjects} title="All Projects" />
+      <ProjectCardsView projects={filteredProjects} title="All Projects" />
     </Box>
   );
 }

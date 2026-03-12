@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useAuthCheck } from "../../../hooks";
 
 import { createUser, getAllUsers } from "../../../../database/model/user";
+import { USER_ROLES } from "../../../constants/app.constants";
 
 export default function NewUserFormDialog({
   setAddUserOpen,
@@ -129,10 +130,10 @@ export default function NewUserFormDialog({
                 name="role"
                 onChange={(e) => handleChange(e)}
               >
-                <MenuItem value="admin">Admin</MenuItem>
-                <MenuItem value="manager">Manager</MenuItem>
-                <MenuItem value="developer">Developer</MenuItem>
-                <MenuItem value="tester">Tester</MenuItem>
+                <MenuItem value={USER_ROLES.ADMIN}>Admin</MenuItem>
+                <MenuItem value={USER_ROLES.MANAGER}>Manager</MenuItem>
+                <MenuItem value={USER_ROLES.DEVELOPER}>Developer</MenuItem>
+                <MenuItem value={USER_ROLES.TESTER}>Tester</MenuItem>
               </Select>
             </FormControl>
             <TextField

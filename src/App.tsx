@@ -24,6 +24,7 @@ import UserProjects from "./user/UserProjects";
 import ProjectDetails from "./common/projects/ProjectDetails";
 import KanbanBoard from "./common/story/KanbanBoard";
 import { useInitializeDB } from "./hooks";
+import Settings from "./user/Settings";
 
 function App(): React.ReactElement {
   useInitializeDB();
@@ -58,6 +59,7 @@ function App(): React.ReactElement {
         {/*  Story routes */}
 
         <Route path="project-stories/:type/:id" element={<KanbanBoard />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
 
       <Route

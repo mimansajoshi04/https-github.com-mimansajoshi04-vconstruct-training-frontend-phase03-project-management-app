@@ -28,6 +28,11 @@ import NewStoryFormDialog from "./NewStoryFormDialog";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import { UserContext } from "../../context/contexts/UserContext";
+import {
+  KANBAN_STAUS,
+  STORY_PRIORITY,
+  USER_ROLES,
+} from "../../constants/app.constants";
 
 export default function KanbanBoard(): ReactNode {
   const { type, id } = useParams();
@@ -49,6 +54,11 @@ export default function KanbanBoard(): ReactNode {
   const [isLoading, setIsLoading] = useState(true);
 
   const [newStoryOpen, setNewStoryOpen] = useState<boolean>(false);
+
+  const resetFilters = () => {
+    setUserId("all");
+    setPriority("all");
+  };
 
   useEffect(() => {
     const loadStories = async () => {
@@ -120,19 +130,19 @@ export default function KanbanBoard(): ReactNode {
 
   // Now create memoized arrays for each status
   const filteredBacklogStories = useMemo(
-    () => filteredStoriesByStatus("backlog"),
+    () => filteredStoriesByStatus(KANBAN_STAUS.BACKLOG),
     [filteredStoriesByStatus],
   );
   const filteredInProgressStories = useMemo(
-    () => filteredStoriesByStatus("in_progress"),
+    () => filteredStoriesByStatus(KANBAN_STAUS.IN_PROGRESS),
     [filteredStoriesByStatus],
   );
   const filteredTestingStories = useMemo(
-    () => filteredStoriesByStatus("testing"),
+    () => filteredStoriesByStatus(KANBAN_STAUS.TESTING),
     [filteredStoriesByStatus],
   );
   const filteredDoneStories = useMemo(
-    () => filteredStoriesByStatus("done"),
+    () => filteredStoriesByStatus(KANBAN_STAUS.DONE),
     [filteredStoriesByStatus],
   );
 
@@ -184,7 +194,7 @@ export default function KanbanBoard(): ReactNode {
                 onChange={(e) => setUserId(e.target.value)}
               >
                 <MenuItem value="all">All</MenuItem>
-                {user?.role !== "admin" && (
+                {user?.role !== USER_ROLES.ADMIN && (
                   <MenuItem value={currentUserId}>Self</MenuItem>
                 )}
                 {members.map((m) => {
@@ -207,11 +217,15 @@ export default function KanbanBoard(): ReactNode {
               onChange={(e) => setPriority(e.target.value)}
             >
               <MenuItem value="all">All</MenuItem>
-              <MenuItem value="low">Low</MenuItem>
-              <MenuItem value="medium">Medium</MenuItem>
-              <MenuItem value="high">High</MenuItem>
+              <MenuItem value={STORY_PRIORITY.LOW}>Low</MenuItem>
+              <MenuItem value={STORY_PRIORITY.MEDIUM}>Medium</MenuItem>
+              <MenuItem value={STORY_PRIORITY.HIGH}>High</MenuItem>
             </Select>
           </FormControl>
+
+          <Button variant="outlined" onClick={() => resetFilters()}>
+            Reset
+          </Button>
         </Stack>
       </Box>
 

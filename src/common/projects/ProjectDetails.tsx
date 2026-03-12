@@ -16,6 +16,7 @@ import { Box, Button, Stack } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import EditProjectFormDialog from "./EditProjectFormDialog";
+import { PROJECT_TYPES, USER_ROLES } from "../../constants/app.constants";
 
 export default function ProjectDetails() {
   useAuthCheck({
@@ -32,7 +33,7 @@ export default function ProjectDetails() {
   const [members, setMembers] = useState<any[]>([]);
   const [editProject, setEditProject] = useState(false);
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === USER_ROLES.ADMIN;
 
   const projectId = Number(id);
 
@@ -40,7 +41,7 @@ export default function ProjectDetails() {
     if (!id || !projects) return null;
 
     switch (type) {
-      case "admin": // putting null in else because it said to me: fallthrough case
+      case PROJECT_TYPES.ADMIN: // putting null in else because it said to me: fallthrough case
         if (Array.isArray(projects)) {
           return isAdmin
             ? projects?.find((proj: any) => proj?.id === projectId)
@@ -49,7 +50,7 @@ export default function ProjectDetails() {
           return null;
         }
 
-      case "created":
+      case PROJECT_TYPES.CREATED:
         if (!Array.isArray(projects)) {
           return projects?.createdProjects?.find(
             (proj: any) => proj.id === projectId,
@@ -58,7 +59,7 @@ export default function ProjectDetails() {
           return null;
         }
 
-      case "assigned":
+      case PROJECT_TYPES.ASSIGNED:
         if (!Array.isArray(projects)) {
           return projects?.assignedProjects?.find(
             (proj: any) => proj.id === projectId,
@@ -74,7 +75,7 @@ export default function ProjectDetails() {
 
   useEffect(() => {
     if (!project) {
-      navigate("/dashboard/projects/all", { replace: true });
+      navigate(`/dashboard/projects/${PROJECT_TYPES.ALL}`, { replace: true });
     }
   }, [project, navigate]);
 
@@ -95,7 +96,7 @@ export default function ProjectDetails() {
 
   if (!project) return null;
 
-  let isAssigned = type === "assigned";
+  let isAssigned = type === PROJECT_TYPES.ASSIGNED;
 
   return (
     <Box>
@@ -110,7 +111,7 @@ export default function ProjectDetails() {
         <Button
           variant="outlined"
           startIcon={<ArrowBackRoundedIcon />}
-          onClick={() => navigate("/dashboard/projects/all")}
+          onClick={() => navigate(`/dashboard/projects/${PROJECT_TYPES.ALL}`)}
         >
           See All Projects
         </Button>
